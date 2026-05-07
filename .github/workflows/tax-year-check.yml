@@ -1,0 +1,69 @@
+name: UK tax-year check
+
+on:
+  schedule:
+    # First of every month at 09:00 UTC. Cheap; catches the new tax year
+    # the morning after it starts (6 April) and again every month until a
+    # new pack is added.
+    - cron: "0 9 1 * *"
+  push:
+    branches: [main]
+    paths:
+      - "src/engine/constants/taxYears/**"
+      - "scripts/check-tax-year.mjs"
+      - ".github/workflows/tax-year-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify pack exists for current UK tax year
+        id: check
+        run: node scripts/check-tax-year.mjs
+
+      - name: Open reminder issue if pack is missing
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          MONTH=$(date -u +%Y-%m)
+          TITLE="UK tax-year pack missing for current year (${MONTH})"
+          # De-duplicate: skip if an open issue with this title already exists.
+          EXISTING=$(gh issue list --repo "$REPO" --state open --search "in:title \"$TITLE\"" --json number --jq '.[0].number' || echo "")
+          if [ -n "$EXISTING" ]; then
+            echo "Existing reminder issue #$EXISTING already open; not creating duplicate."
+            exit 0
+          fi
+          gh issue create --repo "$REPO" \
+            --title "$TITLE" \
+            --label "tax-year,maintenance" \
+            --body "$(cat <<EOF
+          The CI tax-year guard ran on ${TODAY} and found no \`TaxYearPack\` registered for the current UK tax year.
+
+          ### What to do
+
+          1. Confirm the latest figures from authoritative sources:
+             - HMRC Annex A: rates and allowances (gov.uk Budget OOTLAR)
+             - gov.scot Scottish Income Tax factsheet
+             - DWP "Benefit and pension rates" for state pension uprating
+          2. Create \`src/engine/constants/taxYears/<YYYY-YY>.ts\` modelled on the most recent pack.
+          3. Register the new pack in \`src/engine/constants/taxYears/index.ts\`.
+          4. Add or update tests if any year-specific assertions need refreshing.
+          5. Run \`npm test\` and \`npm run typecheck\` locally, then open a PR.
+
+          The \`uk.ts\` facade and engine call sites pick up the new pack automatically once it is the active pack by date.
+          EOF
+          )"

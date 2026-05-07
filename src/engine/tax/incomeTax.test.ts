@@ -4,6 +4,8 @@ import {
   marginalIncomeRate,
   personalAllowance,
 } from "./incomeTax";
+import { currentTaxYearPack } from "@/engine/constants/taxYears";
+import type { TaxBand } from "@/engine/constants/taxYears";
 
 describe("personalAllowance taper (PRD §5.3.1)", () => {
   it("full PA below £100k", () => {
@@ -29,7 +31,6 @@ describe("England & Wales income tax", () => {
     expect(incomeTax(30_000, "england_wales")).toBeCloseTo(3_486, 2);
   });
   it("higher rate applied above £50,270", () => {
-    // £60,000 → 7,540 @ 20% = 1,508 ; (60,000 - 50,270) = 9,730 @ 40% = 3,892 → wait recompute:
     // basic band: 50,270 - 12,570 = 37,700 @ 20% = 7,540
     // higher band: 60,000 - 50,270 = 9,730 @ 40% = 3,892
     // total: 11,432
@@ -52,14 +53,13 @@ describe("England & Wales income tax", () => {
   });
 });
 
-describe("Scottish income tax", () => {
-  it("£30k Scottish: PA + starter + basic + intermediate", () => {
-    // 12,570 @ 0
-    // 14,876 - 12,570 = 2,306 @ 19% = 438.14
-    // 26,561 - 14,876 = 11,685 @ 20% = 2,337
-    // 30,000 - 26,561 = 3,439 @ 21% = 722.19
-    // total ≈ 3,497.33
-    expect(incomeTax(30_000, "scotland")).toBeCloseTo(3_497.33, 1);
+describe("Scottish income tax (active tax year)", () => {
+  // Scottish bands change yearly; re-derive expected from the active pack so
+  // this test remains accurate when a new pack is added.
+  it("£30k Scottish matches active pack bands", () => {
+    const pack = currentTaxYearPack();
+    const expected = applyBandsLocal(30_000, pack.scotlandIncomeBands);
+    expect(incomeTax(30_000, "scotland")).toBeCloseTo(expected, 1);
   });
 });
 
@@ -71,3 +71,15 @@ describe("marginalIncomeRate", () => {
     expect(marginalIncomeRate(10_000, "england_wales")).toBe(0);
   });
 });
+
+function applyBandsLocal(income: number, bands: TaxBand[]): number {
+  let prev = 0;
+  let tax = 0;
+  for (const band of bands) {
+    if (income <= prev) break;
+    const slice = Math.min(income, band.upperBound) - prev;
+    if (slice > 0) tax += slice * band.rate;
+    prev = band.upperBound;
+  }
+  return tax;
+}

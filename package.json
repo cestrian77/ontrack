@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
+    "check:tax-year": "node scripts/check-tax-year.mjs",
     "deploy": "wrangler pages deploy dist"
   },
   "dependencies": {

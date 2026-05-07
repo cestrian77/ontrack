@@ -9,15 +9,23 @@ import {
   ISA_ANNUAL_ALLOWANCE,
   PENSION_ANNUAL_ALLOWANCE,
   STATE_PENSION_WEEKLY_FULL,
+  UK_TAX_YEAR,
 } from "@/engine/constants/uk";
+import {
+  currentTaxYearPack,
+  isCurrentTaxYearRegistered,
+  taxYearLabelForDate,
+} from "@/engine/constants/taxYears";
 
 describe("Phase 1 acceptance criteria (PRD §16.1)", () => {
-  it("§14: 2024/25 tax constants present", () => {
+  it("§14: active tax-year pack matches today and headline frozen figures hold", () => {
+    expect(isCurrentTaxYearRegistered()).toBe(true);
+    expect(UK_TAX_YEAR).toBe(taxYearLabelForDate());
     expect(ENGLAND_WALES_INCOME_BANDS[0].upperBound).toBe(12_570);
     expect(ENGLAND_WALES_INCOME_BANDS[1].rate).toBe(0.2);
     expect(ISA_ANNUAL_ALLOWANCE).toBe(20_000);
     expect(PENSION_ANNUAL_ALLOWANCE).toBe(60_000);
-    expect(STATE_PENSION_WEEKLY_FULL).toBe(221.2);
+    expect(STATE_PENSION_WEEKLY_FULL).toBe(currentTaxYearPack().statePensionWeeklyFull);
   });
 
   it("Wealth journey renders for all asset combinations (projection completes)", () => {

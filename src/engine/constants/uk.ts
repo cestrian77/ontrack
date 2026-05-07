@@ -1,79 +1,72 @@
 /**
- * UK 2024/25 tax-year constants. Single source of truth (PRD §14).
- * All band thresholds in £/year; rates as decimals (0.20 = 20%).
+ * Active UK tax-year constants. This module is a thin facade over
+ * `taxYears/` that re-exports the pack for the current UK tax year (resolved
+ * by today's date). Each historical year is a frozen pack in `taxYears/`.
+ *
+ * The auto-check workflow `.github/workflows/tax-year-check.yml` opens a
+ * reminder issue every April if a pack for the new tax year is missing.
  */
 
-export const UK_TAX_YEAR = "2024/25";
+import { currentTaxYearPack } from "./taxYears";
 
-export interface TaxBand {
-  upperBound: number; // exclusive upper bound; Infinity for top band
-  rate: number;
-}
+export type { TaxBand, TaxYearPack } from "./taxYears";
+export {
+  TAX_YEAR_PACKS,
+  currentTaxYearPack,
+  resolveTaxYearPack,
+  taxYearPackByLabel,
+  taxYearLabelForDate,
+  isCurrentTaxYearRegistered,
+} from "./taxYears";
 
-// PRD §5.3.1
-export const ENGLAND_WALES_INCOME_BANDS: TaxBand[] = [
-  { upperBound: 12_570, rate: 0 },
-  { upperBound: 50_270, rate: 0.2 },
-  { upperBound: 125_140, rate: 0.4 },
-  { upperBound: Infinity, rate: 0.45 },
-];
+const PACK = currentTaxYearPack();
 
-// PRD §5.3.2 (Scottish bands)
-export const SCOTLAND_INCOME_BANDS: TaxBand[] = [
-  { upperBound: 12_570, rate: 0 },
-  { upperBound: 14_876, rate: 0.19 },
-  { upperBound: 26_561, rate: 0.2 },
-  { upperBound: 43_662, rate: 0.21 },
-  { upperBound: 75_000, rate: 0.42 },
-  { upperBound: 125_140, rate: 0.45 },
-  { upperBound: Infinity, rate: 0.48 },
-];
+export const UK_TAX_YEAR = PACK.label;
 
-// PRD §5.3.3
-export const NI_BANDS: TaxBand[] = [
-  { upperBound: 12_570, rate: 0 },
-  { upperBound: 50_270, rate: 0.08 },
-  { upperBound: Infinity, rate: 0.02 },
-];
+export const ENGLAND_WALES_INCOME_BANDS = PACK.englandWalesIncomeBands;
+export const SCOTLAND_INCOME_BANDS = PACK.scotlandIncomeBands;
+export const NI_BANDS = PACK.niBands;
 
-export const PERSONAL_ALLOWANCE = 12_570;
-export const PA_TAPER_START = 100_000;
-export const PA_TAPER_END = 125_140;
+export const PERSONAL_ALLOWANCE = PACK.personalAllowance;
+export const PA_TAPER_START = PACK.paTaperStart;
+export const PA_TAPER_END = PACK.paTaperEnd;
+export const BASIC_RATE_THRESHOLD_EW = PACK.basicRateThresholdEW;
+export const HIGHER_RATE_THRESHOLD_EW = PACK.higherRateThresholdEW;
 
-export const BASIC_RATE_THRESHOLD_EW = 50_270;
-export const HIGHER_RATE_THRESHOLD_EW = 125_140;
+export const ISA_ANNUAL_ALLOWANCE = PACK.isaAnnualAllowance;
+export const LISA_ANNUAL_ALLOWANCE = PACK.lisaAnnualAllowance;
+export const LISA_BONUS_RATE = PACK.lisaBonusRate;
+export const LISA_MAX_AGE_CONTRIB = PACK.lisaMaxAgeContrib;
+export const LISA_ACCESS_AGE = PACK.lisaAccessAge;
 
-export const ISA_ANNUAL_ALLOWANCE = 20_000;
-export const LISA_ANNUAL_ALLOWANCE = 4_000;
-export const LISA_BONUS_RATE = 0.25;
-export const LISA_MAX_AGE_CONTRIB = 50;
-export const LISA_ACCESS_AGE = 60;
+export const PENSION_ANNUAL_ALLOWANCE = PACK.pensionAnnualAllowance;
+export const MPAA = PACK.mpaa;
+export const ADJUSTED_INCOME_TAPER_THRESHOLD = PACK.adjustedIncomeTaperThreshold;
+export const TAPERED_AA_FLOOR = PACK.taperedAaFloor;
 
-export const PENSION_ANNUAL_ALLOWANCE = 60_000;
-export const MPAA = 10_000;
-export const ADJUSTED_INCOME_TAPER_THRESHOLD = 260_000;
-export const TAPERED_AA_FLOOR = 10_000;
+export const CGT_ANNUAL_EXEMPT = PACK.cgtAnnualExempt;
+export const CGT_BASIC_RATE = PACK.cgtBasicRate;
+export const CGT_HIGHER_RATE = PACK.cgtHigherRate;
 
-export const CGT_ANNUAL_EXEMPT = 3_000;
-export const CGT_BASIC_RATE = 0.18;
-export const CGT_HIGHER_RATE = 0.24;
+export const DIVIDEND_ALLOWANCE = PACK.dividendAllowance;
+export const DIVIDEND_ORDINARY_RATE = PACK.dividendOrdinaryRate;
+export const DIVIDEND_UPPER_RATE = PACK.dividendUpperRate;
+export const DIVIDEND_ADDITIONAL_RATE = PACK.dividendAdditionalRate;
+export const PSA_BASIC = PACK.psaBasic;
+export const PSA_HIGHER = PACK.psaHigher;
 
-export const DIVIDEND_ALLOWANCE = 500;
-export const PSA_BASIC = 1_000;
-export const PSA_HIGHER = 500;
+export const STATE_PENSION_WEEKLY_FULL = PACK.statePensionWeeklyFull;
+export const STATE_PENSION_ANNUAL_FULL = PACK.statePensionAnnualFull;
 
-export const STATE_PENSION_WEEKLY_FULL = 221.2;
-export const STATE_PENSION_ANNUAL_FULL = 11_502.4;
+export const SPA_DEFAULT = PACK.spaDefault;
+export const NMPA_PRE_2028 = PACK.nmpaPre2028;
+export const NMPA_FROM_2028 = PACK.nmpaFrom2028;
 
-export const SPA_DEFAULT = 67;
-export const NMPA_PRE_2028 = 55;
-export const NMPA_FROM_2028 = 57;
+export const HICBC_THRESHOLD = PACK.hicbcThreshold;
+export const HICBC_UPPER_BOUND = PACK.hicbcUpperBound;
+export const SDLT_BTL_SURCHARGE = PACK.sdltBtlSurcharge;
 
-export const HICBC_THRESHOLD = 60_000;
-
-export const SDLT_BTL_SURCHARGE = 0.05; // updated Oct 2024
-
-// PRD §5.2 default economic assumptions
+// PRD §5.2 default economic assumptions — independent of tax year.
 export const DEFAULT_CPI = 0.025;
 export const DEFAULT_EQUITY_GROWTH_NOMINAL = 0.05;
 export const DEFAULT_CASH_RATE = 0.035;
