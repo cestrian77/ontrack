@@ -1,4 +1,6 @@
 import { useId } from "react";
+import { MetricHint } from "@/components/ui/metric-hint";
+import { FIRE_PROGRESS_TOOLTIP } from "@/lib/fireMetricsExplain";
 import { gbp, pct } from "@/lib/utils";
 import type { FireMetrics } from "@/engine/types";
 
@@ -59,10 +61,14 @@ export function FireRing({ fire, size = 200 }: Props) {
           <div className="text-3xl font-semibold tabular-nums leading-tight">
             {pct(progress)}
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {gbp(fire.investableNow)} / {gbp(fire.fireNumber)}
-          </div>
         </div>
+      </div>
+
+      <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground -mt-1">
+        <span className="tabular-nums">
+          {gbp(fire.investableNow)} / {gbp(fire.fireNumber)}
+        </span>
+        <MetricHint text={FIRE_PROGRESS_TOOLTIP} className="text-muted-foreground" />
       </div>
 
       <div className="w-full max-w-[260px] space-y-2 pt-1 border-t border-border">

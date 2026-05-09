@@ -10,12 +10,16 @@ import { useDismissedInsights, useProjection } from "@/lib/hooks";
 import { generateInsights } from "@/engine/insights/insights";
 import { buildReportData } from "@/features/reports/buildReportData";
 import { downloadReportPdf } from "@/features/reports/downloadReport";
+import { generateReportChartImages } from "@/features/reports/renderPdfCharts";
 import { FULL_REPORT_SECTION_IDS, REPORT_SECTIONS, type ReportSectionId } from "@/features/reports/sections";
+import { baseTaxYearPack } from "@/lib/taxYearContext";
 
 export default function ReportBuilder() {
   const profile = useProfileStore((s) => s.profile);
   const scenarios = useScenarioStore((s) => s.scenarios);
   const selectedScenarioIds = useUiStore((s) => s.selectedScenarioIds);
+  const inflationToggle = useUiStore((s) => s.inflationToggle);
+  const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const { projection, fire, taxYearPack } = useProjection();
   const { dismissed } = useDismissedInsights();
   const [selectedSections, setSelectedSections] = useState<ReportSectionId[]>(FULL_REPORT_SECTION_IDS);
@@ -41,11 +45,35 @@ export default function ReportBuilder() {
     [activeInsights, fire, profile, projection, scenarios, selectedScenarioIds, taxYearPack],
   );
 
+  const basePackForCharts = useMemo(
+    () => baseTaxYearPack(analysisTaxYearLabel),
+    [analysisTaxYearLabel],
+  );
+
+  const selectedScenarios = useMemo(
+    () => scenarios.filter((s) => selectedScenarioIds.includes(s.id)).slice(0, 3),
+    [scenarios, selectedScenarioIds],
+  );
+
   const generate = async (sections: ReportSectionId[]) => {
     if (sections.length === 0) return;
     setIsGenerating(true);
     try {
-      await downloadReportPdf({ data: reportData, sections });
+      const chartImages = generateReportChartImages({
+        sections,
+        profile,
+        projection,
+        taxYearPack,
+        baseTaxYearPack: basePackForCharts,
+        mode: inflationToggle,
+        scenarios: selectedScenarios,
+      });
+      const hasChart =
+        chartImages.wealthJourney !== undefined || chartImages.cashflow !== undefined;
+      await downloadReportPdf({
+        data: { ...reportData, ...(hasChart ? { chartImages } : {}) },
+        sections,
+      });
     } finally {
       setIsGenerating(false);
     }

@@ -44,8 +44,11 @@ describe("buildReportData", () => {
     });
 
     expect(data.dashboardMetrics.length).toBeGreaterThan(0);
+    expect(data.dashboardSummaryFootnotes.length).toBeGreaterThan(0);
+    expect(data.scenarioComparisonFootnotes.length).toBeGreaterThan(0);
     expect(data.activeInsights).toHaveLength(1);
     expect(data.scenarioComparison).toHaveLength(1);
     expect(data.scenarioComparison[0]?.scenarioName).toBe("Boost ISA");
+    expect(data.chartImages).toBeUndefined();
   });
 });

@@ -8,7 +8,13 @@ export const ProfileRepo = {
   }> {
     const row = await db.profile.get("singleton");
     if (!row) return { profile: null, onboardingComplete: false };
-    return { profile: row.data, onboardingComplete: row.onboardingComplete };
+    const data = row.data;
+    const profile: UserProfile = {
+      ...data,
+      hasLisa: data.hasLisa ?? true,
+      hasGia: data.hasGia ?? true,
+    };
+    return { profile, onboardingComplete: row.onboardingComplete };
   },
   async save(profile: UserProfile, onboardingComplete: boolean): Promise<void> {
     await db.profile.put({

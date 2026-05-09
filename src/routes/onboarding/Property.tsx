@@ -97,7 +97,7 @@ export default function OnboardingProperty() {
         <Field
           label="Monthly overpayment"
           hint="Optional. Applied to principal each month."
-          example="£0"
+          example="£100"
         >
           <NumberInput
             prefix="£"

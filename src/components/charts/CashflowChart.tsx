@@ -12,13 +12,10 @@ import {
 } from "recharts";
 import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
-import {
-  annualNetEmploymentIncome,
-  annualOtherIncome,
-} from "@/engine/cashflow/employmentIncome";
 import { gbp } from "@/lib/utils";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
 import { useUiStore } from "@/store/useUiStore";
+import { buildCashflowSeriesData } from "@/features/reports/chartData/cashflowSeries";
 
 interface Props {
   profile: UserProfile;
@@ -33,28 +30,11 @@ interface Props {
  */
 export function CashflowChart({ profile, projection, taxYearPack, height = 280 }: Props) {
   const mode = useUiStore((s) => s.inflationToggle);
-  const cpi = profile.cpi;
 
-  const netEmployed =
-    annualNetEmploymentIncome(profile, taxYearPack) + annualOtherIncome(profile);
-
-  const data = useMemo(() => {
-    return projection.years.map((y, i) => {
-      const factor = mode === "nominal" ? Math.pow(1 + cpi, i) : 1;
-      const passive =
-        y.statePensionIncome + y.dbIncome + y.drawdownIncome + y.btlCashflowNet;
-      const gross = y.retired ? passive : netEmployed + y.btlCashflowNet;
-      const target =
-        y.retired && profile.targetRetirementIncome > 0
-          ? profile.targetRetirementIncome * factor
-          : null;
-      return {
-        age: y.age,
-        cashflow: gross * factor,
-        target,
-      };
-    });
-  }, [projection.years, mode, cpi, netEmployed, profile.targetRetirementIncome]);
+  const data = useMemo(
+    () => buildCashflowSeriesData({ profile, projection, taxYearPack, mode }),
+    [projection, profile, taxYearPack, mode],
+  );
 
   return (
     <ResponsiveContainer width="100%" height={height}>

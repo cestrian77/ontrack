@@ -1,4 +1,4 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { ReportData } from "@/features/reports/buildReportData";
 import type { ReportSectionId } from "@/features/reports/sections";
 
@@ -15,6 +15,10 @@ const styles = StyleSheet.create({
   insightTitle: { fontWeight: 700, marginBottom: 3 },
   insightMeta: { fontSize: 10, color: "#666", marginBottom: 2 },
   note: { color: "#666" },
+  footnotes: { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#eeeeee" },
+  footnote: { fontSize: 8.5, color: "#666", marginBottom: 4, lineHeight: 1.45 },
+  chartTitle: { fontSize: 12, marginBottom: 6, fontWeight: 700 },
+  chartImage: { width: "100%", maxHeight: 220, objectFit: "contain" as const },
 });
 
 export function ReportDocument({
@@ -41,6 +45,13 @@ export function ReportDocument({
                 <Text style={styles.value}>{metric.value}</Text>
               </View>
             ))}
+            <View style={styles.footnotes}>
+              {data.dashboardSummaryFootnotes.map((line, i) => (
+                <Text key={i} style={styles.footnote}>
+                  {i + 1}. {line}
+                </Text>
+              ))}
+            </View>
           </View>
         )}
 
@@ -67,6 +78,15 @@ export function ReportDocument({
                   </View>
                 </View>
               ))
+            )}
+            {data.scenarioComparison.length > 0 && (
+              <View style={styles.footnotes}>
+                {data.scenarioComparisonFootnotes.map((line, i) => (
+                  <Text key={i} style={styles.footnote}>
+                    {i + 1}. {line}
+                  </Text>
+                ))}
+              </View>
             )}
           </View>
         )}
@@ -97,6 +117,28 @@ export function ReportDocument({
                 <Text style={styles.value}>{metric.value}</Text>
               </View>
             ))}
+          </View>
+        )}
+
+        {selectedSections.includes("chart-wealth-journey") && (
+          <View style={styles.section} wrap={false}>
+            <Text style={styles.chartTitle}>Wealth journey</Text>
+            {data.chartImages?.wealthJourney ? (
+              <Image src={data.chartImages.wealthJourney} style={styles.chartImage} />
+            ) : (
+              <Text style={styles.note}>Chart was not generated (export again from the app).</Text>
+            )}
+          </View>
+        )}
+
+        {selectedSections.includes("chart-cash-flow") && (
+          <View style={styles.section} wrap={false}>
+            <Text style={styles.chartTitle}>Cash flow</Text>
+            {data.chartImages?.cashflow ? (
+              <Image src={data.chartImages.cashflow} style={styles.chartImage} />
+            ) : (
+              <Text style={styles.note}>Chart was not generated (export again from the app).</Text>
+            )}
           </View>
         )}
       </Page>

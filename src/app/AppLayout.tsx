@@ -22,6 +22,8 @@ import { ageFromDob } from "@/engine/project/runProjection";
 import { useProjection } from "@/lib/hooks";
 import { cn, gbp, pct } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { FIRE_PROGRESS_TOOLTIP } from "@/lib/fireMetricsExplain";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", Icon: Home },
@@ -82,9 +84,20 @@ export function AppLayout() {
               </span>
               <span className="h-4 w-px bg-border" />
               <span className="text-muted-foreground">FIRE</span>
-              <span className="font-medium">
-                {pct(Math.min(1, fire.fireProgressPct / 100))}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="font-medium underline decoration-dotted decoration-muted-foreground/60 underline-offset-2"
+                    aria-label="Explain FIRE progress"
+                  >
+                    {pct(Math.min(1, fire.fireProgressPct / 100))}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-left leading-snug">
+                  {FIRE_PROGRESS_TOOLTIP}
+                </TooltipContent>
+              </Tooltip>
               <span className="h-4 w-px bg-border" />
               <span className="text-muted-foreground">Investable</span>
               <span className="font-medium">{gbp(fire.investableNow)}</span>

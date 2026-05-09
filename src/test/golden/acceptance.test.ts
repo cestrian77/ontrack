@@ -95,6 +95,22 @@ describe("Phase 1 acceptance criteria (PRD §16.1)", () => {
     expect(ins[0].impactScore).toBeGreaterThanOrEqual(ins[ins.length - 1].impactScore);
   });
 
+  it("Hides LISA insight when user marks no LISA", () => {
+    const p = makeDefaultProfile();
+    p.hasLisa = false;
+    p.lisaMonthly = 0;
+    p.dateOfBirth = "1990-01-01";
+    const proj = runProjection(p);
+    const fire = computeFire(p, proj);
+    const ins = generateInsights({
+      profile: p,
+      projection: proj,
+      fire,
+      taxYearPack: currentTaxYearPack(),
+    });
+    expect(ins.some((i) => i.id === "lisa_unused")).toBe(false);
+  });
+
   it("Performance: projection runs in <100ms for 60-year horizon", () => {
     const p = makeDefaultProfile();
     const start = performance.now();

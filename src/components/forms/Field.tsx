@@ -64,7 +64,6 @@ export function NumberInput({
   max,
   step,
   className,
-  onFocus,
   ...rest
 }: NumberInputProps) {
   const displayValue = Number.isFinite(value) ? value : 0;
@@ -80,12 +79,6 @@ export function NumberInput({
         inputMode="decimal"
         value={displayValue}
         onChange={(e) => onChange(Number(e.target.value))}
-        onFocus={(e) => {
-          if (displayValue === 0) {
-            e.currentTarget.select();
-          }
-          onFocus?.(e);
-        }}
         min={min}
         max={max}
         step={step}

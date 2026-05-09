@@ -5,6 +5,10 @@ import { applyScenario } from "@/engine/scenarios/templates";
 import { computeFire } from "@/engine/fire/fire";
 import { runProjection } from "@/engine/project/runProjection";
 import { scenarioTaxYearPack } from "@/lib/taxYearContext";
+import {
+  REPORT_DASHBOARD_FOOTNOTES,
+  REPORT_SCENARIO_FIRE_FOOTNOTES,
+} from "@/lib/fireMetricsExplain";
 import { gbp, pct } from "@/lib/utils";
 
 export interface ReportMetric {
@@ -19,13 +23,22 @@ export interface ReportScenarioComparisonRow {
   fireNumber: string;
 }
 
+/** PNG data URIs for optional PDF chart sections (generated at export time). */
+export interface ReportChartImages {
+  wealthJourney?: string;
+  cashflow?: string;
+}
+
 export interface ReportData {
   generatedAt: string;
   profileName: string;
   dashboardMetrics: ReportMetric[];
+  dashboardSummaryFootnotes: readonly string[];
   scenarioComparison: ReportScenarioComparisonRow[];
+  scenarioComparisonFootnotes: readonly string[];
   activeInsights: Array<{ title: string; body: string; severity: Insight["severity"] }>;
   assumptions: ReportMetric[];
+  chartImages?: ReportChartImages;
 }
 
 interface BuildReportDataArgs {
@@ -64,6 +77,7 @@ export function buildReportData({
       { label: "FIRE progress", value: pct(Math.min(1, fire.fireProgressPct / 100)) },
       { label: "FIRE age", value: fire.fireAge ? `Age ${fire.fireAge}` : "Not reached" },
     ],
+    dashboardSummaryFootnotes: [...REPORT_DASHBOARD_FOOTNOTES],
     scenarioComparison: selectedScenarios.map((scenario) => {
       const updatedProfile = applyScenario(profile, scenario);
       const pack = scenarioTaxYearPack(baseTaxYearPack, scenario.params?.taxYearLabel);
@@ -79,6 +93,7 @@ export function buildReportData({
         fireNumber: gbp(scenarioFire.fireNumber),
       };
     }),
+    scenarioComparisonFootnotes: [...REPORT_SCENARIO_FIRE_FOOTNOTES],
     activeInsights: insights.slice(0, 8).map((insight) => ({
       title: insight.title,
       body: insight.body,

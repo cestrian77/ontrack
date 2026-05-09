@@ -76,6 +76,46 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Accounts for insights</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Uncheck accounts you do not use (for example, no LISA). The model ignores their balances
+            and contributions; related insights stay off the Insights page and dashboard.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4 max-w-lg">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={profile.hasLisa}
+              onChange={(e) => update({ hasLisa: e.target.checked })}
+              className="h-4 w-4 accent-primary mt-0.5 shrink-0"
+            />
+            <span>
+              <span className="font-medium text-sm text-foreground">I have a LISA</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">
+                Lifetime ISA — bonus and allowance tips apply only if you use one.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={profile.hasGia}
+              onChange={(e) => update({ hasGia: e.target.checked })}
+              className="h-4 w-4 accent-primary mt-0.5 shrink-0"
+            />
+            <span>
+              <span className="font-medium text-sm text-foreground">I have a GIA</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">
+                General Investment Account outside ISA wrappers.
+              </span>
+            </span>
+          </label>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Global assumptions</CardTitle>
           <p className="text-xs text-muted-foreground">
             Tweak these to stress-test your projection. Defaults follow PRD §5.2.
@@ -135,7 +175,7 @@ export default function Settings() {
           </Field>
           <Field
             label="Rental growth"
-            hint="Nominal % p.a. Rent path uses this vs CPI (Fisher) inside the projection."
+            hint="Nominal % p.a. vs CPI sets real rent in projections; matching CPI keeps real BTL rent flat."
           >
             <PercentInput
               value={profile.rentalGrowth}

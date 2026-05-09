@@ -95,7 +95,8 @@ const fireProgressRule: Rule = ({ fire }) => {
 };
 
 const isaAllowanceRule: Rule = ({ profile, taxYearPack }) => {
-  const annual = profile.ssIsaMonthly * 12 + profile.lisaMonthly * 12;
+  const lisaAnnual = profile.hasLisa ? profile.lisaMonthly * 12 : 0;
+  const annual = profile.ssIsaMonthly * 12 + lisaAnnual;
   const remaining = taxYearPack.isaAnnualAllowance - annual;
   if (remaining <= 0) return null;
   return {
@@ -110,6 +111,7 @@ const isaAllowanceRule: Rule = ({ profile, taxYearPack }) => {
 };
 
 const lisaUnused: Rule = ({ profile, taxYearPack }) => {
+  if (!profile.hasLisa) return null;
   const age = ageFromDob(profile.dateOfBirth);
   if (age > taxYearPack.lisaMaxAgeContrib) return null;
   const annual = profile.lisaMonthly * 12;

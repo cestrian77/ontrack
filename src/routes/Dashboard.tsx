@@ -14,6 +14,12 @@ import { InflationToggle } from "@/components/charts/InflationToggle";
 import { CashflowChart } from "@/components/charts/CashflowChart";
 import { InsightCard } from "@/components/insights/InsightCard";
 import { AssetProjectionTables } from "@/components/projection/AssetProjectionTables";
+import { MetricHint } from "@/components/ui/metric-hint";
+import {
+  FIRE_NUMBER_TOOLTIP,
+  FIRE_PROGRESS_TOOLTIP,
+  NET_WORTH_TOTAL_TOOLTIP,
+} from "@/lib/fireMetricsExplain";
 import { gbp } from "@/lib/utils";
 import { InsightRepo } from "@/db/repository";
 
@@ -44,9 +50,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Stat label="Net worth today" value={gbp(projection.years[0]?.totalNetWorth ?? 0)} />
-        <Stat label="Net worth at retirement" value={gbp(atRet?.totalNetWorth ?? 0)} />
-        <Stat label="FIRE number" value={gbp(fire.fireNumber)} />
+        <Stat label="Net worth today" value={gbp(projection.years[0]?.totalNetWorth ?? 0)} hint={NET_WORTH_TOTAL_TOOLTIP} />
+        <Stat
+          label="Net worth at retirement"
+          value={gbp(atRet?.totalNetWorth ?? 0)}
+          hint={NET_WORTH_TOTAL_TOOLTIP}
+        />
+        <Stat label="FIRE number" value={gbp(fire.fireNumber)} hint={FIRE_NUMBER_TOOLTIP} />
       </div>
 
       <Card>
@@ -104,7 +114,13 @@ export default function Dashboard() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>FIRE progress</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              FIRE progress
+              <MetricHint text={FIRE_PROGRESS_TOOLTIP} />
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Investable wealth vs FIRE number (excludes property equity).
+            </p>
           </CardHeader>
           <CardContent>
             <FireRing fire={fire} />
@@ -153,12 +169,13 @@ export default function Dashboard() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <Card>
       <CardContent className="pt-4 pb-4">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">
-          {label}
+        <div className="flex items-center gap-1.5 min-h-[1rem]">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+          {hint ? <MetricHint text={hint} /> : null}
         </div>
         <div className="text-2xl font-semibold tabular-nums mt-1">{value}</div>
       </CardContent>

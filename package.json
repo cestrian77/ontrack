@@ -1,7 +1,7 @@
 {
   "name": "ontrack",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "OnTrack — UK Retirement Trajectory Planner. Local-first PWA.",
   "scripts": {

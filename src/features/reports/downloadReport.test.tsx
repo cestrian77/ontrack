@@ -46,7 +46,13 @@ describe("downloadReportPdf", () => {
       insights: [],
     });
 
-    await downloadReportPdf({ data, sections: ["dashboard-summary"] });
+    await downloadReportPdf({
+      data: {
+        ...data,
+        chartImages: { wealthJourney: "data:image/png;base64,xx" },
+      },
+      sections: ["dashboard-summary", "chart-wealth-journey"],
+    });
 
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");

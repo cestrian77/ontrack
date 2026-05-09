@@ -5,6 +5,8 @@ import { useProjection } from "@/lib/hooks";
 import { FireRing } from "@/components/charts/FireRing";
 import { FireTimeline } from "@/components/charts/FireTimeline";
 import { Waterfall } from "@/components/charts/Waterfall";
+import { MetricHint } from "@/components/ui/metric-hint";
+import { FIRE_AGE_TOOLTIP, FIRE_PROGRESS_TOOLTIP } from "@/lib/fireMetricsExplain";
 import { gbp, pct } from "@/lib/utils";
 
 export default function Fire() {
@@ -16,7 +18,13 @@ export default function Fire() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>FIRE progress</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              FIRE progress
+              <MetricHint text={FIRE_PROGRESS_TOOLTIP} />
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Investable wealth vs FIRE number (excludes property equity).
+            </p>
           </CardHeader>
           <CardContent>
             <FireRing fire={fire} />
@@ -32,6 +40,7 @@ export default function Fire() {
               <Stat
                 label="FIRE age"
                 value={fire.fireAge ? `${fire.fireAge}` : "Beyond horizon"}
+                hint={FIRE_AGE_TOOLTIP}
                 badge={
                   fire.fireAge && fire.fireAge <= profile.retirementTargetAge
                     ? "On track"
@@ -120,18 +129,21 @@ function FireCard({
 function Stat({
   label,
   value,
+  hint,
   badge,
   badgeVariant,
 }: {
   label: string;
   value: string;
+  hint?: string;
   badge?: string;
   badgeVariant?: "success" | "warning" | "default";
 }) {
   return (
     <div className="rounded-md border p-3">
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">
-        {label}
+      <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+        <span>{label}</span>
+        {hint ? <MetricHint text={hint} /> : null}
       </div>
       <div className="flex items-center justify-between gap-2 mt-1">
         <div className="text-lg font-semibold tabular-nums">{value}</div>

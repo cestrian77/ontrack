@@ -71,7 +71,8 @@ export const DEFAULT_CPI = 0.025;
 export const DEFAULT_EQUITY_GROWTH_NOMINAL = 0.05;
 export const DEFAULT_CASH_RATE = 0.035;
 export const DEFAULT_PROPERTY_APPRECIATION = 0.03;
-export const DEFAULT_RENTAL_GROWTH = 0.025;
+/** Nominal AST / market rent escalation. Slightly above CPI so BTL cashflow grows in real £ (see `runProjection` rentScale). */
+export const DEFAULT_RENTAL_GROWTH = DEFAULT_CPI + 0.005;
 export const DEFAULT_SP_TRIPLE_LOCK = 0.025;
 export const DEFAULT_SALARY_GROWTH = 0.025;
 

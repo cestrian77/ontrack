@@ -51,8 +51,18 @@ export default function OnboardingReview() {
       rows: [
         ["S&S ISA", `${gbp(profile.ssIsaValue)} + ${gbp(profile.ssIsaMonthly)}/mo`],
         ["Cash ISA", `${gbp(profile.cashIsaValue)} @ ${pct(profile.cashIsaRate)}`],
-        ["LISA", `${gbp(profile.lisaValue)} + ${gbp(profile.lisaMonthly)}/mo`],
-        ["GIA", `${gbp(profile.giaValue)} + ${gbp(profile.giaMonthly)}/mo`],
+        ...(profile.hasLisa
+          ? ([["LISA", `${gbp(profile.lisaValue)} + ${gbp(profile.lisaMonthly)}/mo`]] as [
+              string,
+              string,
+            ][])
+          : []),
+        ...(profile.hasGia
+          ? ([["GIA", `${gbp(profile.giaValue)} + ${gbp(profile.giaMonthly)}/mo`]] as [
+              string,
+              string,
+            ][])
+          : []),
       ],
     },
     {

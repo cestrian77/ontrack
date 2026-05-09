@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,17 @@ export function StepShell({
   children,
 }: Props) {
   const navigate = useNavigate();
+  const fieldsRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const root = fieldsRef.current;
+    if (!root) return;
+    const first = root.querySelector<HTMLElement>(
+      'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), [role="combobox"]:not([aria-disabled="true"])',
+    );
+    first?.focus({ preventScroll: true });
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -30,7 +42,7 @@ export function StepShell({
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent className="space-y-6">
-        {children}
+        <div ref={fieldsRef}>{children}</div>
         <div className="flex items-center justify-between pt-4 border-t">
           {prev ? (
             <Button variant="ghost" onClick={() => navigate(prev)}>

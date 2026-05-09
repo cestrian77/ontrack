@@ -64,6 +64,10 @@ export interface UserProfile {
   isaGrowth: number;
   lisaValue: number;
   lisaMonthly: number;
+  /** Uncheck if you do not use a LISA; hides LISA-specific insights. */
+  hasLisa: boolean;
+  /** Uncheck if you do not use a GIA; hides GIA-specific insights when shown. */
+  hasGia: boolean;
 
   // Section E — Property (primary)
   primaryValue: number;

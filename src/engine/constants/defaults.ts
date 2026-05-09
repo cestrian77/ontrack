@@ -50,6 +50,8 @@ export function makeDefaultProfile(): UserProfile {
     isaGrowth: DEFAULT_EQUITY_GROWTH_NOMINAL,
     lisaValue: 0,
     lisaMonthly: 0,
+    hasLisa: true,
+    hasGia: true,
 
     primaryValue: 350_000,
     primaryMortgage: 200_000,

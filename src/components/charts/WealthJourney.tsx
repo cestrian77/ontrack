@@ -12,14 +12,15 @@ import {
   YAxis,
 } from "recharts";
 import type { Projection, Scenario, UserProfile } from "@/engine/types";
-import { applyScenario } from "@/engine/scenarios/templates";
-import { runProjection } from "@/engine/project/runProjection";
-import { computeFire } from "@/engine/fire/fire";
-import { gbp, nominalise } from "@/lib/utils";
-import { baseTaxYearPack, scenarioTaxYearPack } from "@/lib/taxYearContext";
-import { PROJECTION_ASSET_LAYERS, type ProjectionAssetKey } from "@/lib/projection-assets";
+import { gbp } from "@/lib/utils";
+import { baseTaxYearPack } from "@/lib/taxYearContext";
+import { PROJECTION_ASSET_LAYERS } from "@/lib/projection-assets";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
 import { useUiStore } from "@/store/useUiStore";
+import {
+  buildWealthJourneySeriesData,
+  WEALTH_JOURNEY_LAYER_COLOURS,
+} from "@/features/reports/chartData/wealthJourneySeries";
 
 interface Props {
   profile: UserProfile;
@@ -28,60 +29,25 @@ interface Props {
   height?: number;
 }
 
-const COLOURS: Record<ProjectionAssetKey, string> = {
-  pensionValue: "#0f766e",
-  isaValue: "#d4a017",
-  cashIsaValue: "#fbbf24",
-  lisaValue: "#a855f7",
-  giaValue: "#10b981",
-  cashValue: "#64748b",
-  primaryEquity: "#1e3a8a",
-  btlEquity: "#3b82f6",
-};
-
 export function WealthJourney({ profile, projection, scenarios = [], height = 360 }: Props) {
   const mode = useUiStore((s) => s.inflationToggle);
   const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
-  const cpi = profile.cpi;
   const basePack = useMemo(
     () => baseTaxYearPack(analysisTaxYearLabel),
     [analysisTaxYearLabel],
   );
 
-  const data = useMemo(() => {
-    const scenarioProjections = scenarios.map((s) =>
-      runProjection(applyScenario(profile, s), {
-        taxYearPack: scenarioTaxYearPack(basePack, s.params?.taxYearLabel),
+  const { rows: data, fireY } = useMemo(
+    () =>
+      buildWealthJourneySeriesData({
+        profile,
+        projection,
+        scenarios,
+        mode,
+        baseTaxYearPack: basePack,
       }),
-    );
-    return projection.years.map((y, i) => {
-      const factor = mode === "nominal" ? Math.pow(1 + cpi, i) : 1;
-      const row: Record<string, number> = {
-        age: y.age,
-      };
-      for (const layer of PROJECTION_ASSET_LAYERS) {
-        row[layer.key] = (y[layer.key] as number) * factor;
-      }
-      row.totalNetWorth = y.totalNetWorth * factor;
-      scenarioProjections.forEach((sp, idx) => {
-        const point = sp.years[i];
-        if (point) {
-          row[`scenario_${idx}`] = point.totalNetWorth * factor;
-        }
-      });
-      return row;
-    });
-  }, [projection, mode, cpi, scenarios, profile, basePack]);
-
-  const fire = computeFire(profile, projection, basePack);
-  const fireY =
-    mode === "nominal"
-      ? nominalise(
-          fire.fireNumber,
-          cpi,
-          projection.meta.retirementAge - projection.meta.currentAge,
-        )
-      : fire.fireNumber;
+    [projection, mode, scenarios, profile, basePack],
+  );
 
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -111,8 +77,8 @@ export function WealthJourney({ profile, projection, scenarios = [], height = 36
             type="monotone"
             dataKey={l.key}
             stackId="wealth"
-            stroke={COLOURS[l.key]}
-            fill={COLOURS[l.key]}
+            stroke={WEALTH_JOURNEY_LAYER_COLOURS[l.key]}
+            fill={WEALTH_JOURNEY_LAYER_COLOURS[l.key]}
             fillOpacity={0.7}
             name={l.label}
             isAnimationActive={false}

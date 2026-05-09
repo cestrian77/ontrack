@@ -24,7 +24,7 @@ export function TaxDashboard({ profile, taxYearPack }: Props) {
   const sipp = sippGrossAnnual(profile.sippMonthly);
   const totalPensionContrib = wp.total + sipp;
   const isaContribAnnual =
-    profile.ssIsaMonthly * 12 + profile.lisaMonthly * 12;
+    profile.ssIsaMonthly * 12 + (profile.hasLisa ? profile.lisaMonthly * 12 : 0);
   const marginal = marginalIncomeRate(profile.grossSalary, profile.region, pack);
 
   const reliefSaved = sipp * Math.max(0, marginal - 0);

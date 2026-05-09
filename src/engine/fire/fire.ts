@@ -53,8 +53,8 @@ export function computeFire(
   const netTakeHome = Math.max(0, profile.grossSalary - tax - ni);
   const annualSaving =
     profile.ssIsaMonthly * 12 +
-    profile.lisaMonthly * 12 +
-    profile.giaMonthly * 12 +
+    (profile.hasLisa ? profile.lisaMonthly * 12 : 0) +
+    (profile.hasGia ? profile.giaMonthly * 12 : 0) +
     profile.sippMonthly * 12 +
     profile.grossSalary * profile.employeeContribPct;
   const savingsRate = profile.grossSalary > 0 ? annualSaving / profile.grossSalary : 0;

@@ -58,8 +58,8 @@ export function runProjection(
   let pension = profile.pensionPot;
   let ssIsa = profile.ssIsaValue;
   let cashIsa = profile.cashIsaValue;
-  let lisa = profile.lisaValue;
-  let gia = profile.giaValue;
+  let lisa = profile.hasLisa ? profile.lisaValue : 0;
+  let gia = profile.hasGia ? profile.giaValue : 0;
   let cash = profile.cashSavings;
 
   let primaryValue = profile.primaryValue;
@@ -99,8 +99,10 @@ export function runProjection(
 
     const annualPensionContrib = retired ? 0 : wp.total + sippAnnual;
     const annualSsIsaContrib = retired ? 0 : (profile.ssIsaMonthly + isaExtra) * 12;
-    const annualLisaContribMonthly = retired ? 0 : profile.lisaMonthly;
-    const annualGiaContrib = retired ? 0 : profile.giaMonthly * 12;
+    const annualLisaContribMonthly =
+      retired || !profile.hasLisa ? 0 : profile.lisaMonthly;
+    const giaMonthlyEff = profile.hasGia ? profile.giaMonthly : 0;
+    const annualGiaContrib = retired ? 0 : giaMonthlyEff * 12;
 
     // Apply growth + contributions (annual step, end-of-year contribution).
     if (i > 0) {
@@ -108,7 +110,7 @@ export function runProjection(
       ssIsa = ssIsa * (1 + rIsa) + annualSsIsaContrib;
       cashIsa = compoundAnnual(cashIsa, rCash);
       lisa = lisaAnnualGrowth(lisa, annualLisaContribMonthly, rIsa, age);
-      gia = giaAnnualGrowth(gia, profile.giaMonthly, rGia);
+      gia = giaAnnualGrowth(gia, giaMonthlyEff, rGia);
       cash = compoundAnnual(cash, rCash);
 
       // Primary property
