@@ -183,6 +183,8 @@ export interface Projection {
     nmpa: number;
     spa: number;
     horizon: number;
+    /** Set when `combineProjections` merged two people (indicative household view). */
+    isHousehold?: boolean;
   };
 }
 
@@ -211,6 +213,8 @@ export interface Scenario {
   templateId?: string;
   params?: ScenarioParams;
   createdAt: string;
+  /** Which person's profile the scenario layers on; default primary. */
+  personScope?: "primary" | "partner";
 }
 
 export interface FireMetrics {

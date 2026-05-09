@@ -38,6 +38,7 @@ describe("downloadReportPdf", () => {
     const fire = computeFire(profile, projection);
     const data = buildReportData({
       profile,
+      primaryProfile: profile,
       projection,
       fire,
       baseTaxYearPack: currentTaxYearPack(),

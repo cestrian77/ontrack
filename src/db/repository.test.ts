@@ -16,7 +16,9 @@ describe("exportAll / importAll", () => {
     const profile = makeDefaultProfile();
     await db.profile.put({
       id: "singleton",
-      data: profile,
+      primary: profile,
+      partner: null,
+      dependentCount: 0,
       onboardingComplete: true,
       updatedAt: new Date().toISOString(),
     });
@@ -25,6 +27,7 @@ describe("exportAll / importAll", () => {
     const json = await exportAll();
     expect(json).toContain("insightDismissals");
     expect(json).toContain("test_insight_id");
+    expect(json).toContain('"version": 2');
 
     await db.transaction("rw", db.profile, db.scenarios, db.insights, async () => {
       await db.profile.clear();
@@ -35,6 +38,27 @@ describe("exportAll / importAll", () => {
     await importAll(json);
     const dismissed = await InsightRepo.dismissed();
     expect(dismissed.has("test_insight_id")).toBe(true);
+  });
+
+  it("imports v2 JSON with household row", async () => {
+    const profile = makeDefaultProfile();
+    const v2 = JSON.stringify({
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      household: {
+        id: "singleton",
+        primary: profile,
+        partner: null,
+        dependentCount: 2,
+        onboardingComplete: true,
+        updatedAt: new Date().toISOString(),
+      },
+      scenarios: [],
+    });
+    await importAll(v2);
+    const row = await db.profile.get("singleton");
+    expect(row?.dependentCount).toBe(2);
+    expect(row?.primary?.targetRetirementIncome).toBe(profile.targetRetirementIncome);
   });
 
   it("imports legacy v1 JSON without insightDismissals", async () => {

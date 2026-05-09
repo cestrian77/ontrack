@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useProfileStore } from "@/store/useProfileStore";
 import { useScenarioStore } from "@/store/useScenarioStore";
 import { useUiStore } from "@/store/useUiStore";
 import { useDismissedInsights, useProjection } from "@/lib/hooks";
@@ -22,10 +21,17 @@ import {
 } from "@/lib/fireMetricsExplain";
 import { gbp } from "@/lib/utils";
 import { InsightRepo } from "@/db/repository";
+import { HOUSEHOLD_VIEW_FOOTNOTE } from "@/engine/household/semantics";
+import { AnalysisViewSwitch } from "@/components/AnalysisViewSwitch";
 
 export default function Dashboard() {
-  const profile = useProfileStore((s) => s.profile);
-  const { projection, fire, taxYearPack } = useProjection();
+  const {
+    projection,
+    fire,
+    taxYearPack,
+    analysisProfile,
+    isHouseholdAnalysis,
+  } = useProjection();
   const allScenarios = useScenarioStore((s) => s.scenarios);
   const selectedIds = useUiStore((s) => s.selectedScenarioIds);
   const selectedScenarios = useMemo(
@@ -35,20 +41,33 @@ export default function Dashboard() {
 
   const { dismissed, reload } = useDismissedInsights();
   const insights = useMemo(() => {
-    return generateInsights({ profile, projection, fire, taxYearPack }).filter(
-      (i) => !dismissed.has(i.id),
-    );
-  }, [profile, projection, fire, taxYearPack, dismissed]);
+    return generateInsights({
+      profile: analysisProfile,
+      projection,
+      fire,
+      taxYearPack,
+    }).filter((i) => !dismissed.has(i.id));
+  }, [analysisProfile, projection, fire, taxYearPack, dismissed]);
 
   const dismiss = async (id: string) => {
     await InsightRepo.dismiss(id);
     await reload();
   };
 
-  const atRet = projection.years.find((y) => y.age === profile.retirementTargetAge);
+  const atRet = projection.years.find(
+    (y) => y.age === analysisProfile.retirementTargetAge,
+  );
 
   return (
     <div className="space-y-6">
+      <div className="lg:hidden">
+        <AnalysisViewSwitch />
+      </div>
+      {isHouseholdAnalysis && (
+        <p className="text-xs text-muted-foreground border border-border rounded-md p-3 bg-muted/30">
+          {HOUSEHOLD_VIEW_FOOTNOTE}
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat label="Net worth today" value={gbp(projection.years[0]?.totalNetWorth ?? 0)} hint={NET_WORTH_TOTAL_TOOLTIP} />
         <Stat
@@ -71,9 +90,9 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <WealthJourney
-            profile={profile}
+            profile={analysisProfile}
             projection={projection}
-            scenarios={selectedScenarios}
+            scenarios={isHouseholdAnalysis ? [] : selectedScenarios}
             height={380}
           />
         </CardContent>
@@ -91,7 +110,7 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <CashflowChart
-            profile={profile}
+            profile={analysisProfile}
             projection={projection}
             taxYearPack={taxYearPack}
             height={300}
@@ -107,7 +126,7 @@ export default function Dashboard() {
           </p>
         </CardHeader>
         <CardContent>
-          <AssetProjectionTables projection={projection} cpi={profile.cpi} />
+          <AssetProjectionTables projection={projection} cpi={analysisProfile.cpi} />
         </CardContent>
       </Card>
 
@@ -130,11 +149,15 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle>Retirement income</CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              At age {profile.retirementTargetAge}: composition of retirement income vs target.
+              At age {analysisProfile.retirementTargetAge}: composition of retirement income vs target.
             </p>
           </CardHeader>
           <CardContent>
-            <IncomeStack profile={profile} projection={projection} taxYearPack={taxYearPack} />
+            <IncomeStack
+              profile={analysisProfile}
+              projection={projection}
+              taxYearPack={taxYearPack}
+            />
           </CardContent>
         </Card>
       </div>
@@ -158,11 +181,11 @@ export default function Dashboard() {
             <CardTitle>Asset allocation</CardTitle>
           </CardHeader>
           <CardContent>
-            <AllocationDonut profile={profile} projection={projection} />
+            <AllocationDonut profile={analysisProfile} projection={projection} />
           </CardContent>
         </Card>
         <div className="lg:col-span-2">
-          <TaxDashboard profile={profile} taxYearPack={taxYearPack} />
+          <TaxDashboard profile={analysisProfile} taxYearPack={taxYearPack} />
         </div>
       </div>
     </div>

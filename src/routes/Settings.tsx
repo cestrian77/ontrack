@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, NumberInput, PercentInput } from "@/components/forms/Field";
 import { useProfileStore } from "@/store/useProfileStore";
+import { makePartnerProfileDefaults } from "@/engine/constants/defaults";
 import { useUiStore } from "@/store/useUiStore";
 import { TAX_YEAR_PACKS } from "@/engine/constants/taxYears";
 import {
@@ -18,8 +19,15 @@ import { Link } from "react-router-dom";
 
 export default function Settings() {
   const profile = useProfileStore((s) => s.profile);
+  const partnerProfile = useProfileStore((s) => s.partnerProfile);
+  const dependentCount = useProfileStore((s) => s.dependentCount);
+  const setPartnerProfile = useProfileStore((s) => s.setPartnerProfile);
+  const setDependentCount = useProfileStore((s) => s.setDependentCount);
+  const updatePartner = useProfileStore((s) => s.updatePartner);
   const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const setAnalysisTaxYearLabel = useUiStore((s) => s.setAnalysisTaxYearLabel);
+  const setActivePersonId = useUiStore((s) => s.setActivePersonId);
+  const setAnalysisViewMode = useUiStore((s) => s.setAnalysisViewMode);
   const update = useProfileStore((s) => s.update);
   const reset = useProfileStore((s) => s.reset);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -76,6 +84,54 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Household &amp; partner</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Add a second profile for couple or family analysis. Enter your shared primary home only on{" "}
+            <span className="font-medium text-foreground">your</span> profile; the partner slot defaults
+            to no primary property so household totals are not doubled.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4 max-w-lg">
+          {partnerProfile ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Partner profile is saved. Use the header switch (Individual / Couple / Family) and
+                &quot;Partner&quot; when editing Property or Tax for their numbers.
+              </p>
+              <Field label="Dependents (for Family view label)" hint="Does not change tax or projections yet.">
+                <NumberInput
+                  value={dependentCount}
+                  onChange={(n) => setDependentCount(n)}
+                  min={0}
+                  max={20}
+                />
+              </Field>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (confirm("Remove partner profile from this device?")) {
+                    setPartnerProfile(null);
+                    setActivePersonId("primary");
+                    setAnalysisViewMode("individual");
+                  }
+                }}
+              >
+                Remove partner profile
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => setPartnerProfile(makePartnerProfileDefaults())}
+            >
+              Add partner profile
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Accounts for insights</CardTitle>
           <p className="text-xs text-muted-foreground">
             Uncheck accounts you do not use (for example, no LISA). The model ignores their balances
@@ -111,6 +167,35 @@ export default function Settings() {
               </span>
             </span>
           </label>
+          {partnerProfile && (
+            <>
+              <div className="text-xs font-medium text-foreground pt-2 border-t">
+                Partner
+              </div>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={partnerProfile.hasLisa}
+                  onChange={(e) => updatePartner({ hasLisa: e.target.checked })}
+                  className="h-4 w-4 accent-primary mt-0.5 shrink-0"
+                />
+                <span>
+                  <span className="font-medium text-sm text-foreground">Partner has a LISA</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={partnerProfile.hasGia}
+                  onChange={(e) => updatePartner({ hasGia: e.target.checked })}
+                  className="h-4 w-4 accent-primary mt-0.5 shrink-0"
+                />
+                <span>
+                  <span className="font-medium text-sm text-foreground">Partner has a GIA</span>
+                </span>
+              </label>
+            </>
+          )}
         </CardContent>
       </Card>
 

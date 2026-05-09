@@ -27,9 +27,16 @@ interface Props {
   projection: Projection;
   scenarios?: Scenario[];
   height?: number;
+  resolveScenarioProfile?: (scenario: Scenario) => UserProfile;
 }
 
-export function WealthJourney({ profile, projection, scenarios = [], height = 360 }: Props) {
+export function WealthJourney({
+  profile,
+  projection,
+  scenarios = [],
+  height = 360,
+  resolveScenarioProfile,
+}: Props) {
   const mode = useUiStore((s) => s.inflationToggle);
   const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const basePack = useMemo(
@@ -45,8 +52,9 @@ export function WealthJourney({ profile, projection, scenarios = [], height = 36
         scenarios,
         mode,
         baseTaxYearPack: basePack,
+        resolveScenarioProfile,
       }),
-    [projection, mode, scenarios, profile, basePack],
+    [projection, mode, scenarios, profile, basePack, resolveScenarioProfile],
   );
 
   return (

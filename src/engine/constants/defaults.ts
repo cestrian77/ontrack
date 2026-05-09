@@ -12,6 +12,31 @@ import {
   STATE_PENSION_WEEKLY_FULL,
 } from "./uk";
 
+/**
+ * Partner slot defaults: no primary home (enter shared home on primary only).
+ * Separate BTL and personal pots belong on this profile.
+ */
+export function makePartnerProfileDefaults(): UserProfile {
+  const p = makeDefaultProfile();
+  const dob = new Date();
+  dob.setFullYear(dob.getFullYear() - 35);
+  p.dateOfBirth = dob.toISOString().slice(0, 10);
+  p.partnered = true;
+  p.primaryValue = 0;
+  p.primaryMortgage = 0;
+  p.primaryMortgagePayment = 0;
+  p.primaryMortgageRate = 0;
+  p.primaryMortgageTermYears = 25;
+  p.primaryOverpayment = 0;
+  p.primaryLabel = "";
+  p.btlProperties = [];
+  p.grossSalary = 45_000;
+  p.pensionPot = 30_000;
+  p.targetRetirementIncome = 28_000;
+  p.updatedAt = new Date().toISOString();
+  return p;
+}
+
 /** New-user defaults. Most fields start zero; user fills during onboarding. */
 export function makeDefaultProfile(): UserProfile {
   const today = new Date();

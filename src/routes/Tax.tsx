@@ -1,19 +1,51 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProfileStore } from "@/store/useProfileStore";
+import { useUiStore } from "@/store/useUiStore";
 import { useProjection } from "@/lib/hooks";
 import { TaxDashboard } from "@/components/charts/TaxDashboard";
 import { pensionNetCost } from "@/engine/pension/contributions";
 import { gbp, pct } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Field } from "@/components/forms/Field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Tax() {
-  const profile = useProfileStore((s) => s.profile);
-  const { taxYearPack } = useProjection();
+  const primary = useProfileStore((s) => s.profile);
+  const partner = useProfileStore((s) => s.partnerProfile);
+  const activePersonId = useUiStore((s) => s.activePersonId);
+  const setActivePersonId = useUiStore((s) => s.setActivePersonId);
+  const profile =
+    activePersonId === "partner" && partner ? partner : primary;
+  const { taxYearPack } = useProjection(profile);
   const sample100 = pensionNetCost(100, profile.grossSalary, profile.region, taxYearPack);
   const sample1000 = pensionNetCost(1000, profile.grossSalary, profile.region, taxYearPack);
 
   return (
     <div className="space-y-6">
+      {partner && (
+        <Field label="Tax view for">
+          <Select
+            value={activePersonId}
+            onValueChange={(v) =>
+              setActivePersonId(v as "primary" | "partner")
+            }
+          >
+            <SelectTrigger className="max-w-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="primary">You (primary)</SelectItem>
+              <SelectItem value="partner">Partner</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
       <TaxDashboard profile={profile} taxYearPack={taxYearPack} />
 
       <Card>

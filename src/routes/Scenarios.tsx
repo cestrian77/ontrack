@@ -13,8 +13,7 @@ import {
   SCENARIO_TEMPLATES,
   summarizeScenario,
 } from "@/engine/scenarios/templates";
-import { useProjection } from "@/lib/hooks";
-import { scenarioTaxYearPack } from "@/lib/taxYearContext";
+import { baseTaxYearPack, scenarioTaxYearPack } from "@/lib/taxYearContext";
 import { runProjection } from "@/engine/project/runProjection";
 import { computeFire } from "@/engine/fire/fire";
 import { TAX_YEAR_PACKS } from "@/engine/constants/taxYears";
@@ -38,7 +37,13 @@ import {
 
 export default function Scenarios() {
   const profile = useProfileStore((s) => s.profile);
-  const { projection: baseProj, fire: baseFire, taxYearPack: basePack } = useProjection();
+  const partnerProfile = useProfileStore((s) => s.partnerProfile);
+  const activePersonId = useUiStore((s) => s.activePersonId);
+  const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
+  const basePack = useMemo(
+    () => baseTaxYearPack(analysisTaxYearLabel),
+    [analysisTaxYearLabel],
+  );
   const scenarios = useScenarioStore((s) => s.scenarios);
   const upsert = useScenarioStore((s) => s.upsert);
   const remove = useScenarioStore((s) => s.remove);
@@ -54,18 +59,43 @@ export default function Scenarios() {
     [scenarios, selectedIds],
   );
 
+  const chartScope = useMemo((): "primary" | "partner" => {
+    const t = selected[0]?.personScope;
+    if (t === "partner" && partnerProfile) return "partner";
+    if (t === "primary") return "primary";
+    return activePersonId === "partner" && partnerProfile ? "partner" : "primary";
+  }, [selected, activePersonId, partnerProfile]);
+
+  const chartProfile =
+    chartScope === "partner" && partnerProfile ? partnerProfile : profile;
+
+  const chartBaseProj = useMemo(
+    () => runProjection(chartProfile, { taxYearPack: basePack }),
+    [chartProfile, basePack],
+  );
+  const chartBaseFire = useMemo(
+    () => computeFire(chartProfile, chartBaseProj, basePack),
+    [chartProfile, chartBaseProj, basePack],
+  );
+
   const compareRows = useMemo(() => {
     return selected.map((s) => {
-      const next = applyScenario(profile, s);
+      const target =
+        s.personScope === "partner" && partnerProfile
+          ? partnerProfile
+          : profile;
+      const next = applyScenario(target, s);
       const pack = scenarioTaxYearPack(basePack, s.params?.taxYearLabel);
       const proj = runProjection(next, { taxYearPack: pack });
       const f = computeFire(next, proj, pack);
       const atRet = proj.years.find((y) => y.age === next.retirementTargetAge);
       return { scenario: s, fire: f, projection: proj, atRet };
     });
-  }, [selected, profile, basePack]);
+  }, [selected, profile, partnerProfile, basePack]);
 
-  const baseAtRet = baseProj.years.find((y) => y.age === profile.retirementTargetAge);
+  const baseAtRet = chartBaseProj.years.find(
+    (y) => y.age === chartProfile.retirementTargetAge,
+  );
 
   const addOrSelectTemplate = async (tplId: string) => {
     const tpl = SCENARIO_TEMPLATES.find((t) => t.id === tplId);
@@ -75,7 +105,11 @@ export default function Scenarios() {
       trySelectScenario(existing.id);
       return;
     }
-    const s = createScenarioFromTemplate(tpl, profile);
+    const scope: "primary" | "partner" =
+      partnerProfile && activePersonId === "partner" ? "partner" : "primary";
+    const effectiveProfile =
+      scope === "partner" && partnerProfile ? partnerProfile : profile;
+    const s = createScenarioFromTemplate(tpl, effectiveProfile, scope);
     await upsert(s);
     trySelectScenario(s.id);
   };
@@ -163,15 +197,19 @@ export default function Scenarios() {
                       variant="ghost"
                       size="icon"
                       className="shrink-0"
-                      onClick={() =>
+                      onClick={() => {
+                        const baseProf =
+                          s.personScope === "partner" && partnerProfile
+                            ? partnerProfile
+                            : profile;
                         setEditing({
                           ...s,
                           params: {
-                            ...defaultParamsForTemplate(s.templateId ?? "", profile),
+                            ...defaultParamsForTemplate(s.templateId ?? "", baseProf),
                             ...s.params,
                           },
-                        })
-                      }
+                        });
+                      }}
                       aria-label={cfg ? "Configure scenario" : "Tax year and rules"}
                     >
                       <Pencil className="h-4 w-4" />
@@ -200,6 +238,10 @@ export default function Scenarios() {
         <ScenarioParamsEditor
           scenario={editing}
           profile={profile}
+          partnerProfile={partnerProfile}
+          onPatch={(patch) =>
+            setEditing((prev) => (prev ? { ...prev, ...patch } : null))
+          }
           onClose={() => setEditing(null)}
           onSave={async (params) => {
             const next = { ...editing, params };
@@ -215,10 +257,15 @@ export default function Scenarios() {
         </CardHeader>
         <CardContent>
           <WealthJourney
-            profile={profile}
-            projection={baseProj}
+            profile={chartProfile}
+            projection={chartBaseProj}
             scenarios={selected}
             height={360}
+            resolveScenarioProfile={(s) =>
+              s.personScope === "partner" && partnerProfile
+                ? partnerProfile
+                : profile
+            }
           />
         </CardContent>
       </Card>
@@ -261,13 +308,13 @@ export default function Scenarios() {
                 />
                 <DeltaRow
                   label="FIRE age"
-                  base={baseFire.fireAge ?? 0}
+                  base={chartBaseFire.fireAge ?? 0}
                   values={compareRows.map((r) => r.fire.fireAge ?? 0)}
                   ageMode
                 />
                 <DeltaRow
                   label="FIRE number"
-                  base={baseFire.fireNumber}
+                  base={chartBaseFire.fireNumber}
                   values={compareRows.map((r) => r.fire.fireNumber)}
                 />
                 <DeltaRow
@@ -292,21 +339,29 @@ export default function Scenarios() {
 function ScenarioParamsEditor({
   scenario,
   profile,
+  partnerProfile,
+  onPatch,
   onClose,
   onSave,
 }: {
   scenario: Scenario;
   profile: UserProfile;
+  partnerProfile: UserProfile | null;
+  onPatch: (patch: Partial<Scenario>) => void;
   onClose: () => void;
   onSave: (p: ScenarioParams) => void | Promise<void>;
 }) {
   const tid = scenario.templateId ?? "";
+  const scenarioProfile =
+    scenario.personScope === "partner" && partnerProfile
+      ? partnerProfile
+      : profile;
   const [params, setParams] = useState<ScenarioParams>(() => ({
-    ...defaultParamsForTemplate(tid, profile),
+    ...defaultParamsForTemplate(tid, scenarioProfile),
     ...scenario.params,
   }));
 
-  const maxPropertySales = 1 + profile.btlProperties.length;
+  const maxPropertySales = 1 + scenarioProfile.btlProperties.length;
 
   const updateSale = (idx: number, patch: Partial<PropertySaleParam>) => {
     const list = [...(params.propertySales ?? [])];
@@ -321,7 +376,7 @@ function ScenarioParamsEditor({
     const usedBtl = new Set(
       list.filter((s) => s.kind === "btl").map((s) => s.btlIndex ?? 0),
     );
-    if (!hasPrimary && profile.primaryValue > 0) {
+    if (!hasPrimary && scenarioProfile.primaryValue > 0) {
       setParams((p) => ({
         ...p,
         propertySales: [...list, { kind: "primary", replacementCost: 0 }],
@@ -329,7 +384,7 @@ function ScenarioParamsEditor({
       return;
     }
     const freeBtl = Array.from(
-      { length: profile.btlProperties.length },
+      { length: scenarioProfile.btlProperties.length },
       (_, i) => i,
     ).find((i) => !usedBtl.has(i));
     if (freeBtl === undefined) return;
@@ -362,6 +417,27 @@ function ScenarioParamsEditor({
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
+          {partnerProfile && (
+            <Field
+              label="Applies to"
+              hint="Layer this change on your profile or your partner’s saved profile."
+            >
+              <Select
+                value={scenario.personScope ?? "primary"}
+                onValueChange={(v) =>
+                  onPatch({ personScope: v as "primary" | "partner" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="primary">You (primary)</SelectItem>
+                  <SelectItem value="partner">Partner</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
           <Field
             label="Tax year for this scenario"
             hint="Leave as global default to follow Settings, or pick a frozen ruleset for what-if comparisons."
@@ -435,7 +511,7 @@ function ScenarioParamsEditor({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="primary">Primary residence</SelectItem>
-                          {profile.btlProperties.map((p, i) => (
+                          {scenarioProfile.btlProperties.map((p, i) => (
                             <SelectItem key={p.id} value={`btl_${i}`}>
                               BTL: {p.label?.trim() || `Property ${i + 1}`}
                             </SelectItem>

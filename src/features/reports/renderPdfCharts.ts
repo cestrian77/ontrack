@@ -80,12 +80,14 @@ function renderWealthJourneyPng({
   scenarios,
   mode,
   baseTaxYearPack,
+  resolveScenarioProfile,
 }: {
   profile: UserProfile;
   projection: Projection;
   scenarios: Scenario[];
   mode: InflationChartMode;
   baseTaxYearPack: TaxYearPack;
+  resolveScenarioProfile?: (scenario: Scenario) => UserProfile;
 }): string | undefined {
   if (typeof document === "undefined") return undefined;
   const canvas = document.createElement("canvas");
@@ -100,6 +102,7 @@ function renderWealthJourneyPng({
     scenarios,
     mode,
     baseTaxYearPack,
+    resolveScenarioProfile,
   });
   if (rows.length === 0) return canvasToDataUrl(canvas);
 
@@ -326,6 +329,7 @@ export function generateReportChartImages({
   baseTaxYearPack,
   mode,
   scenarios,
+  resolveScenarioProfile,
 }: {
   sections: ReportSectionId[];
   profile: UserProfile;
@@ -334,6 +338,7 @@ export function generateReportChartImages({
   baseTaxYearPack: TaxYearPack;
   mode: InflationChartMode;
   scenarios: Scenario[];
+  resolveScenarioProfile?: (scenario: Scenario) => UserProfile;
 }): ReportChartImages {
   const out: ReportChartImages = {};
   if (sections.includes("chart-wealth-journey")) {
@@ -343,6 +348,7 @@ export function generateReportChartImages({
       scenarios,
       mode,
       baseTaxYearPack,
+      resolveScenarioProfile,
     });
     if (uri) out.wealthJourney = uri;
   }

@@ -29,16 +29,23 @@ export function buildWealthJourneySeriesData({
   scenarios,
   mode,
   baseTaxYearPack,
+  resolveScenarioProfile,
+  fireNumberForLine,
 }: {
   profile: UserProfile;
   projection: Projection;
   scenarios: Scenario[];
   mode: InflationChartMode;
   baseTaxYearPack: TaxYearPack;
+  /** Defaults to `profile` when omitted. */
+  resolveScenarioProfile?: (scenario: Scenario) => UserProfile;
+  /** When set, used for the FIRE reference line instead of computeFire(profile, projection). */
+  fireNumberForLine?: number;
 }): { rows: WealthJourneyChartRow[]; fireY: number } {
   const cpi = profile.cpi;
+  const resolve = resolveScenarioProfile ?? (() => profile);
   const scenarioProjections = scenarios.map((s) =>
-    runProjection(applyScenario(profile, s), {
+    runProjection(applyScenario(resolve(s), s), {
       taxYearPack: scenarioTaxYearPack(baseTaxYearPack, s.params?.taxYearLabel),
     }),
   );
@@ -59,15 +66,17 @@ export function buildWealthJourneySeriesData({
     return row;
   });
 
-  const fire = computeFire(profile, projection, baseTaxYearPack);
+  const fireNum =
+    fireNumberForLine ??
+    computeFire(profile, projection, baseTaxYearPack).fireNumber;
   const fireY =
     mode === "nominal"
       ? nominalise(
-          fire.fireNumber,
+          fireNum,
           cpi,
           projection.meta.retirementAge - projection.meta.currentAge,
         )
-      : fire.fireNumber;
+      : fireNum;
 
   return { rows, fireY };
 }

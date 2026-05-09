@@ -42,23 +42,31 @@ export interface ReportData {
 }
 
 interface BuildReportDataArgs {
+  /** Shown metrics / assumptions (individual or household synthetic). */
   profile: UserProfile;
+  primaryProfile: UserProfile;
+  partnerProfile?: UserProfile | null;
   projection: Projection;
   fire: FireMetrics;
   baseTaxYearPack: TaxYearPack;
   scenarios: Scenario[];
   selectedScenarioIds: string[];
   insights: Insight[];
+  /** Overrides default `Age N profile` / household label. */
+  profileDisplayName?: string;
 }
 
 export function buildReportData({
   profile,
+  primaryProfile,
+  partnerProfile = null,
   projection,
   fire,
   baseTaxYearPack,
   scenarios,
   selectedScenarioIds,
   insights,
+  profileDisplayName,
 }: BuildReportDataArgs): ReportData {
   const age = ageFromDob(profile.dateOfBirth);
   const retirementYear = projection.years.find((y) => y.age === profile.retirementTargetAge);
@@ -66,7 +74,7 @@ export function buildReportData({
 
   return {
     generatedAt: new Date().toISOString(),
-    profileName: `Age ${age} profile`,
+    profileName: profileDisplayName ?? `Age ${age} profile`,
     dashboardMetrics: [
       { label: "Current age", value: String(age) },
       { label: "Target retirement age", value: String(profile.retirementTargetAge) },
@@ -79,7 +87,11 @@ export function buildReportData({
     ],
     dashboardSummaryFootnotes: [...REPORT_DASHBOARD_FOOTNOTES],
     scenarioComparison: selectedScenarios.map((scenario) => {
-      const updatedProfile = applyScenario(profile, scenario);
+      const base =
+        scenario.personScope === "partner" && partnerProfile
+          ? partnerProfile
+          : primaryProfile;
+      const updatedProfile = applyScenario(base, scenario);
       const pack = scenarioTaxYearPack(baseTaxYearPack, scenario.params?.taxYearLabel);
       const scenarioProjection = runProjection(updatedProfile, { taxYearPack: pack });
       const scenarioFire = computeFire(updatedProfile, scenarioProjection, pack);

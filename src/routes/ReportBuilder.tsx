@@ -15,34 +15,60 @@ import { FULL_REPORT_SECTION_IDS, REPORT_SECTIONS, type ReportSectionId } from "
 import { baseTaxYearPack } from "@/lib/taxYearContext";
 
 export default function ReportBuilder() {
-  const profile = useProfileStore((s) => s.profile);
+  const primaryProfile = useProfileStore((s) => s.profile);
+  const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const scenarios = useScenarioStore((s) => s.scenarios);
   const selectedScenarioIds = useUiStore((s) => s.selectedScenarioIds);
   const inflationToggle = useUiStore((s) => s.inflationToggle);
   const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
-  const { projection, fire, taxYearPack } = useProjection();
+  const {
+    projection,
+    fire,
+    taxYearPack,
+    analysisProfile,
+    isHouseholdAnalysis,
+  } = useProjection();
   const { dismissed } = useDismissedInsights();
   const [selectedSections, setSelectedSections] = useState<ReportSectionId[]>(FULL_REPORT_SECTION_IDS);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const activeInsights = useMemo(() => {
-    return generateInsights({ profile, projection, fire, taxYearPack }).filter(
-      (insight) => !dismissed.has(insight.id),
-    );
-  }, [dismissed, fire, profile, projection, taxYearPack]);
+    return generateInsights({
+      profile: analysisProfile,
+      projection,
+      fire,
+      taxYearPack,
+    }).filter((insight) => !dismissed.has(insight.id));
+  }, [dismissed, fire, analysisProfile, projection, taxYearPack]);
 
   const reportData = useMemo(
     () =>
       buildReportData({
-        profile,
+        profile: analysisProfile,
+        primaryProfile,
+        partnerProfile,
         projection,
         fire,
         baseTaxYearPack: taxYearPack,
         scenarios,
         selectedScenarioIds,
         insights: activeInsights,
+        profileDisplayName: isHouseholdAnalysis
+          ? "Household (indicative merge)"
+          : undefined,
       }),
-    [activeInsights, fire, profile, projection, scenarios, selectedScenarioIds, taxYearPack],
+    [
+      activeInsights,
+      fire,
+      analysisProfile,
+      primaryProfile,
+      partnerProfile,
+      projection,
+      scenarios,
+      selectedScenarioIds,
+      taxYearPack,
+      isHouseholdAnalysis,
+    ],
   );
 
   const basePackForCharts = useMemo(
@@ -61,12 +87,17 @@ export default function ReportBuilder() {
     try {
       const chartImages = generateReportChartImages({
         sections,
-        profile,
+        profile: analysisProfile,
         projection,
         taxYearPack,
         baseTaxYearPack: basePackForCharts,
         mode: inflationToggle,
         scenarios: selectedScenarios,
+        resolveScenarioProfile:
+          partnerProfile === null
+            ? undefined
+            : (s) =>
+                s.personScope === "partner" ? partnerProfile : primaryProfile,
       });
       const hasChart =
         chartImages.wealthJourney !== undefined || chartImages.cashflow !== undefined;

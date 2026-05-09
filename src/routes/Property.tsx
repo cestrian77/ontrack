@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProfileStore } from "@/store/useProfileStore";
+import { useUiStore } from "@/store/useUiStore";
 import { MortgageAmort } from "@/components/charts/MortgageAmort";
 import { BTLDashboard } from "@/components/charts/BTLDashboard";
 import { NumberInput, Field } from "@/components/forms/Field";
@@ -8,12 +9,33 @@ import { Input } from "@/components/ui/input";
 import { overpaymentSummary } from "@/engine/property/mortgage";
 import { useProjection } from "@/lib/hooks";
 import { gbp, pct } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Property() {
-  const profile = useProfileStore((s) => s.profile);
+  const primary = useProfileStore((s) => s.profile);
+  const partner = useProfileStore((s) => s.partnerProfile);
   const update = useProfileStore((s) => s.update);
-  const { projection, taxYearPack } = useProjection();
+  const updatePartner = useProfileStore((s) => s.updatePartner);
+  const activePersonId = useUiStore((s) => s.activePersonId);
+  const setActivePersonId = useUiStore((s) => s.setActivePersonId);
+
+  const profile =
+    activePersonId === "partner" && partner ? partner : primary;
+  const patch =
+    activePersonId === "partner" && partner ? updatePartner : update;
+
+  const { projection, taxYearPack } = useProjection(profile);
   const [op, setOp] = useState(profile.primaryOverpayment);
+
+  useEffect(() => {
+    setOp(profile.primaryOverpayment);
+  }, [profile.primaryOverpayment, activePersonId]);
 
   const atRet = useMemo(() => {
     return (
@@ -49,6 +71,29 @@ export default function Property() {
 
   return (
     <div className="space-y-6">
+      {partner && (
+        <Field label="Editing property for">
+          <Select
+            value={activePersonId}
+            onValueChange={(v) =>
+              setActivePersonId(v as "primary" | "partner")
+            }
+          >
+            <SelectTrigger className="max-w-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="primary">You (primary)</SelectItem>
+              <SelectItem value="partner">Partner</SelectItem>
+            </SelectContent>
+          </Select>
+          {activePersonId === "partner" && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Enter the shared primary home only on the primary profile; keep partner primary fields at zero to avoid double-counting in household view.
+            </p>
+          )}
+        </Field>
+      )}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -65,7 +110,7 @@ export default function Property() {
             <Field label="Property name" hint="Shown on this page and in exports.">
               <Input
                 value={profile.primaryLabel ?? ""}
-                onChange={(e) => update({ primaryLabel: e.target.value })}
+                onChange={(e) => patch({ primaryLabel: e.target.value })}
                 placeholder="e.g. Family home"
               />
             </Field>
@@ -145,7 +190,7 @@ export default function Property() {
               value={op}
               onChange={(n) => {
                 setOp(n);
-                update({ primaryOverpayment: n });
+                patch({ primaryOverpayment: n });
               }}
             />
           </Field>

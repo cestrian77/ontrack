@@ -297,6 +297,7 @@ export function applyScenario(profile: UserProfile, s: Scenario): UserProfile {
 export function createScenarioFromTemplate(
   template: ScenarioTemplateMeta,
   profile: UserProfile,
+  personScope: "primary" | "partner" = "primary",
 ): Scenario {
   return {
     id: `${template.id}_${Date.now()}`,
@@ -306,6 +307,7 @@ export function createScenarioFromTemplate(
     params: defaultParamsForTemplate(template.id, profile),
     overrides: {},
     createdAt: new Date().toISOString(),
+    personScope,
   };
 }
 
@@ -360,6 +362,9 @@ export function summarizeScenario(s: Scenario): string {
     parts.push(
       `£${Math.round(p.inheritanceAmount).toLocaleString("en-GB")} in ${p.inheritanceYearsFromNow ?? "?"}y`,
     );
+  }
+  if (s.personScope === "partner") {
+    parts.push("Partner profile");
   }
   return parts.join(" · ");
 }

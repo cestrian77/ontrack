@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useProfileStore } from "@/store/useProfileStore";
 import { useProjection } from "@/lib/hooks";
 import { FireRing } from "@/components/charts/FireRing";
 import { FireTimeline } from "@/components/charts/FireTimeline";
@@ -10,8 +9,7 @@ import { FIRE_AGE_TOOLTIP, FIRE_PROGRESS_TOOLTIP } from "@/lib/fireMetricsExplai
 import { gbp, pct } from "@/lib/utils";
 
 export default function Fire() {
-  const profile = useProfileStore((s) => s.profile);
-  const { projection, fire } = useProjection();
+  const { projection, fire, analysisProfile } = useProjection();
 
   return (
     <div className="space-y-6">
@@ -35,19 +33,21 @@ export default function Fire() {
             <CardTitle>Path to FIRE</CardTitle>
           </CardHeader>
           <CardContent>
-            <FireTimeline profile={profile} fire={fire} />
+            <FireTimeline profile={analysisProfile} fire={fire} />
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <Stat
                 label="FIRE age"
                 value={fire.fireAge ? `${fire.fireAge}` : "Beyond horizon"}
                 hint={FIRE_AGE_TOOLTIP}
                 badge={
-                  fire.fireAge && fire.fireAge <= profile.retirementTargetAge
+                  fire.fireAge &&
+                  fire.fireAge <= analysisProfile.retirementTargetAge
                     ? "On track"
                     : "Watch"
                 }
                 badgeVariant={
-                  fire.fireAge && fire.fireAge <= profile.retirementTargetAge
+                  fire.fireAge &&
+                  fire.fireAge <= analysisProfile.retirementTargetAge
                     ? "success"
                     : "warning"
                 }
@@ -63,16 +63,20 @@ export default function Fire() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <FireCard label="Full FIRE" value={fire.fireNumber} note={`${pct(profile.safeWithdrawalRate, 2)} SWR`} />
+        <FireCard
+          label="Full FIRE"
+          value={fire.fireNumber}
+          note={`${pct(analysisProfile.safeWithdrawalRate, 2)} SWR`}
+        />
         <FireCard
           label="Lean FIRE"
           value={fire.leanFireNumber}
-          note={`${pct(profile.leanFirePct, 0)} of target`}
+          note={`${pct(analysisProfile.leanFirePct, 0)} of target`}
         />
         <FireCard
           label="Fat FIRE"
           value={fire.fatFireNumber}
-          note={`${pct(profile.fatFirePct, 0)} of target`}
+          note={`${pct(analysisProfile.fatFirePct, 0)} of target`}
         />
         <FireCard
           label="Coast FIRE"
@@ -83,7 +87,7 @@ export default function Fire() {
         <FireCard
           label="Barista FIRE"
           value={fire.baristaFireNumber}
-          note={`${gbp(profile.baristaPartTimeIncome)}/yr part-time`}
+          note={`${gbp(analysisProfile.baristaPartTimeIncome)}/yr part-time`}
         />
       </div>
 
@@ -91,11 +95,12 @@ export default function Fire() {
         <CardHeader>
           <CardTitle>Contribution impact at retirement</CardTitle>
           <p className="text-xs text-muted-foreground">
-            How each contribution stream and growth driver builds your investable wealth at age {profile.retirementTargetAge}.
+            How each contribution stream and growth driver builds your investable wealth at age{" "}
+            {analysisProfile.retirementTargetAge}.
           </p>
         </CardHeader>
         <CardContent>
-          <Waterfall profile={profile} projection={projection} />
+          <Waterfall profile={analysisProfile} projection={projection} />
         </CardContent>
       </Card>
     </div>

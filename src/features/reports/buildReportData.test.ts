@@ -35,6 +35,7 @@ describe("buildReportData", () => {
 
     const data = buildReportData({
       profile,
+      primaryProfile: profile,
       projection,
       fire,
       baseTaxYearPack: currentTaxYearPack(),

@@ -1,19 +1,23 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useProfileStore } from "@/store/useProfileStore";
 import { useDismissedInsights, useProjection } from "@/lib/hooks";
 import { generateInsights } from "@/engine/insights/insights";
 import { InsightCard } from "@/components/insights/InsightCard";
 import { InsightRepo } from "@/db/repository";
 
 export default function Insights() {
-  const profile = useProfileStore((s) => s.profile);
-  const { projection, fire, taxYearPack } = useProjection();
+  const { projection, fire, taxYearPack, analysisProfile } = useProjection();
   const { dismissed, reload } = useDismissedInsights();
 
   const all = useMemo(
-    () => generateInsights({ profile, projection, fire, taxYearPack }),
-    [profile, projection, fire, taxYearPack],
+    () =>
+      generateInsights({
+        profile: analysisProfile,
+        projection,
+        fire,
+        taxYearPack,
+      }),
+    [analysisProfile, projection, fire, taxYearPack],
   );
   const active = all.filter((i) => !dismissed.has(i.id));
   const hidden = all.filter((i) => dismissed.has(i.id));

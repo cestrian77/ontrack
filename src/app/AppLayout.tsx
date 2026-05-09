@@ -20,6 +20,7 @@ import { useScenarioStore } from "@/store/useScenarioStore";
 import { useTheme } from "./ThemeProvider";
 import { ageFromDob } from "@/engine/project/runProjection";
 import { useProjection } from "@/lib/hooks";
+import { AnalysisViewSwitch } from "@/components/AnalysisViewSwitch";
 import { cn, gbp, pct } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -40,7 +41,6 @@ const NAV = [
 export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const profile = useProfileStore((s) => s.profile);
   const onboardingComplete = useProfileStore((s) => s.onboardingComplete);
   const loaded = useProfileStore((s) => s.loaded);
   const load = useProfileStore((s) => s.load);
@@ -61,9 +61,12 @@ export function AppLayout() {
     }
   }, [loaded, onboardingComplete, navigate, location.pathname]);
 
-  const { fire, taxYearPack } = useProjection();
-  const age = ageFromDob(profile.dateOfBirth);
-  const yearsToTarget = Math.max(0, profile.retirementTargetAge - age);
+  const { fire, taxYearPack, analysisProfile } = useProjection();
+  const age = ageFromDob(analysisProfile.dateOfBirth);
+  const yearsToTarget = Math.max(
+    0,
+    analysisProfile.retirementTargetAge - age,
+  );
 
   return (
     <div className="min-h-full bg-background">
@@ -77,10 +80,13 @@ export function AppLayout() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <div className="hidden lg:flex shrink-0">
+              <AnalysisViewSwitch />
+            </div>
             <div className="hidden md:flex items-center gap-3 text-xs">
               <span className="text-muted-foreground">Target</span>
               <span className="font-medium">
-                Age {profile.retirementTargetAge} · {yearsToTarget}y
+                Age {analysisProfile.retirementTargetAge} · {yearsToTarget}y
               </span>
               <span className="h-4 w-px bg-border" />
               <span className="text-muted-foreground">FIRE</span>
