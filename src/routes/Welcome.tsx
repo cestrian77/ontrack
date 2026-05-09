@@ -95,6 +95,9 @@ export default function Welcome() {
             {" "}
             (also under Help in the app sidebar when you&apos;re using the planner).
           </p>
+          <p className="pt-2 text-[11px] opacity-70">
+            v{__APP_VERSION__} · build {__APP_COMMIT__} · {__APP_BUILD_DATE__}
+          </p>
         </div>
       </div>
     </div>
