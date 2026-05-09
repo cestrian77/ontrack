@@ -1,3 +1,5 @@
+import type { TaxYearPack } from "@/engine/constants/taxYears";
+import { currentTaxYearPack } from "@/engine/constants/taxYears";
 import type { FireMetrics, Projection, UserProfile } from "@/engine/types";
 import { ageFromDob } from "@/engine/project/runProjection";
 import { incomeTax } from "@/engine/tax/incomeTax";
@@ -7,6 +9,7 @@ import { nationalInsurance } from "@/engine/tax/ni";
 export function computeFire(
   profile: UserProfile,
   projection: Projection,
+  pack: TaxYearPack = currentTaxYearPack(),
 ): FireMetrics {
   const age = ageFromDob(profile.dateOfBirth);
   const swr = profile.safeWithdrawalRate;
@@ -35,7 +38,6 @@ export function computeFire(
   );
   const coastReached = investableNow >= coastFireNumber;
 
-  // First year where investable NW crosses FIRE number.
   let yearsToFire: number | null = null;
   let fireAge: number | null = null;
   for (const y of projection.years) {
@@ -46,9 +48,8 @@ export function computeFire(
     }
   }
 
-  // Savings rate (PRD §6.2): (gross − tax − net spend) ÷ gross
-  const tax = incomeTax(profile.grossSalary, profile.region);
-  const ni = nationalInsurance(profile.grossSalary);
+  const tax = incomeTax(profile.grossSalary, profile.region, pack);
+  const ni = nationalInsurance(profile.grossSalary, pack);
   const netTakeHome = Math.max(0, profile.grossSalary - tax - ni);
   const annualSaving =
     profile.ssIsaMonthly * 12 +

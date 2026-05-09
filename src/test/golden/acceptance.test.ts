@@ -85,7 +85,12 @@ describe("Phase 1 acceptance criteria (PRD §16.1)", () => {
     const p = makeDefaultProfile();
     const proj = runProjection(p);
     const fire = computeFire(p, proj);
-    const ins = generateInsights({ profile: p, projection: proj, fire });
+    const ins = generateInsights({
+      profile: p,
+      projection: proj,
+      fire,
+      taxYearPack: currentTaxYearPack(),
+    });
     expect(ins.length).toBeGreaterThan(0);
     expect(ins[0].impactScore).toBeGreaterThanOrEqual(ins[ins.length - 1].impactScore);
   });

@@ -15,6 +15,8 @@ import Property from "@/routes/Property";
 import Tax from "@/routes/Tax";
 import Insights from "@/routes/Insights";
 import Settings from "@/routes/Settings";
+import Help from "@/routes/Help";
+import ReportBuilder from "@/routes/ReportBuilder";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Welcome /> },
@@ -41,6 +43,8 @@ export const router = createBrowserRouter([
       { path: "property", element: <Property /> },
       { path: "tax", element: <Tax /> },
       { path: "insights", element: <Insights /> },
+      { path: "help", element: <Help /> },
+      { path: "reports/builder", element: <ReportBuilder /> },
       { path: "settings", element: <Settings /> },
     ],
   },

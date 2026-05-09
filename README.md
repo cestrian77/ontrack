@@ -7,7 +7,7 @@ A visually rich, **local-first** UK retirement trajectory and wealth projection 
 ## Highlights
 
 - Annual-step deterministic projection engine to age 100 (real-terms with nominal toggle)
-- Full UK 2024/25 tax modelling: England/Wales + Scottish bands, NI, PA taper, CGT, dividend tax
+- UK tax modelling from frozen per-year packs (active year follows the calendar); England/Wales + Scottish bands, NI, PA taper, CGT, dividend tax
 - Pension wrappers: workplace, SIPP relief at source, salary sacrifice efficiency, Annual Allowance with taper, MPAA, DB streams
 - ISA / LISA (25% bonus, age 50/60 rules) / GIA (with CGT drag) / Cash ISA — `£20k` combined cap enforced
 - Primary residence + up to 10 BTLs with **Section 24** mortgage interest restriction modelled (PRD §8.2)

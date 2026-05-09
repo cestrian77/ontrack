@@ -3,6 +3,9 @@ import { create } from "zustand";
 interface UiState {
   inflationToggle: "real" | "nominal";
   setInflationToggle: (v: "real" | "nominal") => void;
+  /** When null, tax/projection use the UK tax year for today's calendar date. */
+  analysisTaxYearLabel: string | null;
+  setAnalysisTaxYearLabel: (v: string | null) => void;
   selectedScenarioIds: string[];
   toggleScenario: (id: string) => void;
   /** Add to selection if not selected and fewer than 3 slots (e.g. newly created scenario). */
@@ -13,6 +16,8 @@ interface UiState {
 export const useUiStore = create<UiState>((set, get) => ({
   inflationToggle: "real",
   setInflationToggle: (v) => set({ inflationToggle: v }),
+  analysisTaxYearLabel: null,
+  setAnalysisTaxYearLabel: (v) => set({ analysisTaxYearLabel: v }),
   selectedScenarioIds: [],
   toggleScenario: (id) => {
     const cur = get().selectedScenarioIds;

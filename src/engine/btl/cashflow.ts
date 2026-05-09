@@ -1,4 +1,6 @@
 import type { BTLProperty, Region } from "@/engine/types";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
+import { currentTaxYearPack } from "@/engine/constants/taxYears";
 import { DEFAULT_BTL_INTEREST_RELIEF } from "@/engine/constants/uk";
 import { marginalIncomeRate } from "@/engine/tax/incomeTax";
 import { monthlyPayment } from "@/engine/property/mortgage";
@@ -15,6 +17,7 @@ export interface BTLCashflowOptions {
    * Use 1 for flat real costs; use `(1+cpi)^i` if modelling nominal cost inflation in a real ledger.
    */
   operatingCostScale?: number;
+  taxYearPack?: TaxYearPack;
 }
 
 export interface BTLCashflow {
@@ -43,6 +46,7 @@ export function btlAnnualCashflow(
   region: Region,
   opts?: BTLCashflowOptions,
 ): BTLCashflow {
+  const pack = opts?.taxYearPack ?? currentTaxYearPack();
   const rentScale = opts?.rentScale ?? 1;
   const costScale = opts?.operatingCostScale ?? 1;
   const mb = opts?.mortgageBalance ?? p.mortgageBalance;
@@ -70,7 +74,7 @@ export function btlAnnualCashflow(
       : monthlyPayment(mb, p.mortgageRate, termRem) * 12;
 
   const taxableIncome = (effectiveRent - operatingExpenses) * ownershipFactor;
-  const marginal = marginalIncomeRate(otherIncome + Math.max(0, taxableIncome), region);
+  const marginal = marginalIncomeRate(otherIncome + Math.max(0, taxableIncome), region, pack);
   const taxBeforeCredit = Math.max(0, taxableIncome) * marginal;
   const s24Credit = mortgageInterest * ownershipFactor * DEFAULT_BTL_INTEREST_RELIEF;
   const taxOnRental = Math.max(0, taxBeforeCredit - s24Credit);

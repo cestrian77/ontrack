@@ -1,12 +1,6 @@
+import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { FireMetrics, Insight, Projection, UserProfile } from "@/engine/types";
 import { isaBridge } from "@/engine/project/isaBridge";
-import {
-  ISA_ANNUAL_ALLOWANCE,
-  LISA_ANNUAL_ALLOWANCE,
-  PA_TAPER_END,
-  PA_TAPER_START,
-  PERSONAL_ALLOWANCE,
-} from "@/engine/constants/uk";
 import { overpaymentSummary } from "@/engine/property/mortgage";
 import { ageFromDob } from "@/engine/project/runProjection";
 import { btlAnnualCashflow } from "@/engine/btl/cashflow";
@@ -19,6 +13,7 @@ export interface InsightContext {
   profile: UserProfile;
   projection: Projection;
   fire: FireMetrics;
+  taxYearPack: TaxYearPack;
 }
 
 type Rule = (ctx: InsightContext) => Insight | null;
@@ -99,9 +94,9 @@ const fireProgressRule: Rule = ({ fire }) => {
   };
 };
 
-const isaAllowanceRule: Rule = ({ profile }) => {
+const isaAllowanceRule: Rule = ({ profile, taxYearPack }) => {
   const annual = profile.ssIsaMonthly * 12 + profile.lisaMonthly * 12;
-  const remaining = ISA_ANNUAL_ALLOWANCE - annual;
+  const remaining = taxYearPack.isaAnnualAllowance - annual;
   if (remaining <= 0) return null;
   return {
     id: "isa_allowance_remaining",
@@ -114,43 +109,43 @@ const isaAllowanceRule: Rule = ({ profile }) => {
   };
 };
 
-const lisaUnused: Rule = ({ profile }) => {
+const lisaUnused: Rule = ({ profile, taxYearPack }) => {
   const age = ageFromDob(profile.dateOfBirth);
-  if (age > 50) return null;
+  if (age > taxYearPack.lisaMaxAgeContrib) return null;
   const annual = profile.lisaMonthly * 12;
-  if (annual >= LISA_ANNUAL_ALLOWANCE) return null;
-  const remaining = LISA_ANNUAL_ALLOWANCE - annual;
+  if (annual >= taxYearPack.lisaAnnualAllowance) return null;
+  const remaining = taxYearPack.lisaAnnualAllowance - annual;
   return {
     id: "lisa_unused",
     category: "tax",
     severity: "info",
     title: "LISA bonus available",
-    body: `Contributing a further ${fmt(remaining)} to your LISA this year unlocks a 25% government bonus of up to ${fmt(remaining * 0.25)}.`,
+    body: `Contributing a further ${fmt(remaining)} to your LISA this year unlocks a 25% government bonus of up to ${fmt(remaining * taxYearPack.lisaBonusRate)}.`,
     impactScore: 50,
     actionRoute: "/tax",
   };
 };
 
-const taperRule: Rule = ({ profile }) => {
-  if (profile.grossSalary <= PA_TAPER_START) return null;
-  if (profile.grossSalary >= PA_TAPER_END) {
+const taperRule: Rule = ({ profile, taxYearPack }) => {
+  if (profile.grossSalary <= taxYearPack.paTaperStart) return null;
+  if (profile.grossSalary >= taxYearPack.paTaperEnd) {
     return {
       id: "pa_fully_tapered",
       category: "tax",
       severity: "warning",
       title: "Personal Allowance fully withdrawn",
-      body: `Your income above ${fmt(PA_TAPER_END)} means you have lost the full ${fmt(PERSONAL_ALLOWANCE)} personal allowance. Pension contributions can restore it.`,
+      body: `Your income above ${fmt(taxYearPack.paTaperEnd)} means you have lost the full ${fmt(taxYearPack.personalAllowance)} personal allowance. Pension contributions can restore it.`,
       impactScore: 85,
       actionRoute: "/tax",
     };
   }
-  const lost = ((profile.grossSalary - PA_TAPER_START) / 2);
+  const lost = (profile.grossSalary - taxYearPack.paTaperStart) / 2;
   return {
     id: "pa_taper",
     category: "tax",
     severity: "warning",
     title: "Personal Allowance is tapering",
-    body: `You are above the ${fmt(PA_TAPER_START)} taper threshold. ${fmt(lost)} of your personal allowance has been withdrawn. Additional pension contributions can restore it.`,
+    body: `You are above the ${fmt(taxYearPack.paTaperStart)} taper threshold. ${fmt(lost)} of your personal allowance has been withdrawn. Additional pension contributions can restore it.`,
     impactScore: 70,
     actionRoute: "/tax",
   };
@@ -180,10 +175,15 @@ const overpayMortgage: Rule = ({ profile }) => {
   };
 };
 
-const btlNegativeCashflow: Rule = ({ profile }) => {
+const btlNegativeCashflow: Rule = ({ profile, taxYearPack }) => {
   if (profile.btlProperties.length === 0) return null;
   const totalCf = profile.btlProperties.reduce((s, p) => {
-    return s + btlAnnualCashflow(p, profile.grossSalary, profile.region).netCashflow;
+    return (
+      s +
+      btlAnnualCashflow(p, profile.grossSalary, profile.region, {
+        taxYearPack,
+      }).netCashflow
+    );
   }, 0);
   if (totalCf >= 0) return null;
   return {
@@ -197,8 +197,8 @@ const btlNegativeCashflow: Rule = ({ profile }) => {
   };
 };
 
-const higherRateRelief: Rule = ({ profile }) => {
-  const marginal = marginalIncomeRate(profile.grossSalary, profile.region);
+const higherRateRelief: Rule = ({ profile, taxYearPack }) => {
+  const marginal = marginalIncomeRate(profile.grossSalary, profile.region, taxYearPack);
   if (marginal < 0.4) return null;
   if (profile.sippMonthly > 0) return null;
   return {
@@ -230,7 +230,11 @@ export function generateInsights(ctx: InsightContext): Insight[] {
   return all.sort((a, b) => b.impactScore - a.impactScore);
 }
 
-export function topInsights(ctx: InsightContext, limit = 5, dismissed: Set<string> = new Set()): Insight[] {
+export function topInsights(
+  ctx: InsightContext,
+  limit = 5,
+  dismissed: Set<string> = new Set(),
+): Insight[] {
   return generateInsights(ctx)
     .filter((i) => !dismissed.has(i.id))
     .slice(0, limit);

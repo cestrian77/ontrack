@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Building2,
@@ -7,6 +7,8 @@ import {
   Home,
   Landmark,
   Lightbulb,
+  FileText,
+  CircleHelp,
   Settings as SettingsIcon,
   SlidersHorizontal,
   Sun,
@@ -28,11 +30,14 @@ const NAV = [
   { to: "/property", label: "Property", Icon: Building2 },
   { to: "/tax", label: "Tax", Icon: Landmark },
   { to: "/insights", label: "Insights", Icon: Lightbulb },
+  { to: "/help", label: "Help", Icon: CircleHelp },
+  { to: "/reports/builder", label: "Reports", Icon: FileText },
   { to: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const profile = useProfileStore((s) => s.profile);
   const onboardingComplete = useProfileStore((s) => s.onboardingComplete);
   const loaded = useProfileStore((s) => s.loaded);
@@ -49,10 +54,12 @@ export function AppLayout() {
   }, [loadScenarios]);
 
   useEffect(() => {
-    if (loaded && !onboardingComplete) navigate("/onboard/you", { replace: true });
-  }, [loaded, onboardingComplete, navigate]);
+    if (loaded && !onboardingComplete && location.pathname !== "/help") {
+      navigate("/onboard/you", { replace: true });
+    }
+  }, [loaded, onboardingComplete, navigate, location.pathname]);
 
-  const { fire } = useProjection();
+  const { fire, taxYearPack } = useProjection();
   const age = ageFromDob(profile.dateOfBirth);
   const yearsToTarget = Math.max(0, profile.retirementTargetAge - age);
 
@@ -81,6 +88,9 @@ export function AppLayout() {
               <span className="h-4 w-px bg-border" />
               <span className="text-muted-foreground">Investable</span>
               <span className="font-medium">{gbp(fire.investableNow)}</span>
+              <span className="h-4 w-px bg-border" />
+              <span className="text-muted-foreground">Tax yr</span>
+              <span className="font-medium tabular-nums">{taxYearPack.label}</span>
             </div>
             <ThemeSwitch theme={theme} setTheme={setTheme} />
           </div>

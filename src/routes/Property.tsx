@@ -12,7 +12,7 @@ import { gbp, pct } from "@/lib/utils";
 export default function Property() {
   const profile = useProfileStore((s) => s.profile);
   const update = useProfileStore((s) => s.update);
-  const { projection } = useProjection();
+  const { projection, taxYearPack } = useProjection();
   const [op, setOp] = useState(profile.primaryOverpayment);
 
   const atRet = useMemo(() => {
@@ -175,7 +175,7 @@ export default function Property() {
           <CardTitle>BTL portfolio</CardTitle>
         </CardHeader>
         <CardContent>
-          <BTLDashboard profile={profile} projection={projection} />
+          <BTLDashboard profile={profile} projection={projection} taxYearPack={taxYearPack} />
         </CardContent>
       </Card>
     </div>

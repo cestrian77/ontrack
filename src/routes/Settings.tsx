@@ -1,14 +1,25 @@
 import { useRef } from "react";
-import { Download, Upload, Trash2 } from "lucide-react";
+import { Download, Upload, Trash2, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, NumberInput, PercentInput } from "@/components/forms/Field";
 import { useProfileStore } from "@/store/useProfileStore";
+import { useUiStore } from "@/store/useUiStore";
+import { TAX_YEAR_PACKS } from "@/engine/constants/taxYears";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { exportAll, importAll } from "@/db/repository";
 import { Link } from "react-router-dom";
 
 export default function Settings() {
   const profile = useProfileStore((s) => s.profile);
+  const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
+  const setAnalysisTaxYearLabel = useUiStore((s) => s.setAnalysisTaxYearLabel);
   const update = useProfileStore((s) => s.update);
   const reset = useProfileStore((s) => s.reset);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -32,6 +43,37 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Tax year for analysis</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Income tax, NI, allowances, BTL marginal rates, FIRE savings rate, and insights use this frozen UK pack unless a scenario overrides it.
+          </p>
+        </CardHeader>
+        <CardContent className="max-w-md">
+          <Field label="Ruleset">
+            <Select
+              value={analysisTaxYearLabel ?? "__calendar__"}
+              onValueChange={(v) =>
+                setAnalysisTaxYearLabel(v === "__calendar__" ? null : v)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__calendar__">Match calendar (today&apos;s tax year)</SelectItem>
+                {TAX_YEAR_PACKS.map((tp) => (
+                  <SelectItem key={tp.label} value={tp.label}>
+                    {tp.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Global assumptions</CardTitle>
@@ -186,9 +228,30 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Reports</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Generate a complete PDF report or build a custom report from selected sections.
+            To keep your inputs, use Data → Export JSON below.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link to="/reports/builder">
+              <FileText className="h-4 w-4" /> Open PDF builder
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Data</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Your data lives in your browser only. Export keeps a copy you can restore later.
+            Stored on this device in your browser (IndexedDB). Download a{" "}
+            <span className="font-medium text-foreground">.json</span> backup
+            (profile, scenarios, dismissed insights) to restore elsewhere or
+            after clearing site data. PDF exports are read-only summaries, not
+            a restore format.
           </p>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">

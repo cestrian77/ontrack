@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
 import { btlAnnualCashflow, btlYields } from "@/engine/btl/cashflow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +19,10 @@ import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-
 interface Props {
   profile: UserProfile;
   projection: Projection;
+  taxYearPack: TaxYearPack;
 }
 
-export function BTLDashboard({ profile, projection }: Props) {
+export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
   if (profile.btlProperties.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
@@ -29,7 +31,9 @@ export function BTLDashboard({ profile, projection }: Props) {
     );
   }
   const cards = profile.btlProperties.map((p) => {
-    const cf = btlAnnualCashflow(p, profile.grossSalary, profile.region);
+    const cf = btlAnnualCashflow(p, profile.grossSalary, profile.region, {
+      taxYearPack,
+    });
     const y = btlYields(p, cf);
     return { p, cf, y };
   });

@@ -8,12 +8,12 @@ import { InsightRepo } from "@/db/repository";
 
 export default function Insights() {
   const profile = useProfileStore((s) => s.profile);
-  const { projection, fire } = useProjection();
+  const { projection, fire, taxYearPack } = useProjection();
   const { dismissed, reload } = useDismissedInsights();
 
   const all = useMemo(
-    () => generateInsights({ profile, projection, fire }),
-    [profile, projection, fire],
+    () => generateInsights({ profile, projection, fire, taxYearPack }),
+    [profile, projection, fire, taxYearPack],
   );
   const active = all.filter((i) => !dismissed.has(i.id));
   const hidden = all.filter((i) => dismissed.has(i.id));

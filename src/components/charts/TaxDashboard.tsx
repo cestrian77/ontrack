@@ -1,10 +1,4 @@
-import {
-  ISA_ANNUAL_ALLOWANCE,
-  PENSION_ANNUAL_ALLOWANCE,
-  CGT_ANNUAL_EXEMPT,
-  DIVIDEND_ALLOWANCE,
-  PSA_BASIC,
-} from "@/engine/constants/uk";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
 import { incomeTax, marginalIncomeRate } from "@/engine/tax/incomeTax";
 import { nationalInsurance } from "@/engine/tax/ni";
 import { workplaceContribAnnual, sippGrossAnnual } from "@/engine/pension/contributions";
@@ -14,11 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Props {
   profile: UserProfile;
+  taxYearPack: TaxYearPack;
 }
 
-export function TaxDashboard({ profile }: Props) {
-  const tax = incomeTax(profile.grossSalary, profile.region);
-  const ni = nationalInsurance(profile.grossSalary);
+export function TaxDashboard({ profile, taxYearPack }: Props) {
+  const pack = taxYearPack;
+  const tax = incomeTax(profile.grossSalary, profile.region, pack);
+  const ni = nationalInsurance(profile.grossSalary, pack);
   const net = profile.grossSalary - tax - ni;
   const wp = workplaceContribAnnual(
     profile.grossSalary,
@@ -29,23 +25,23 @@ export function TaxDashboard({ profile }: Props) {
   const totalPensionContrib = wp.total + sipp;
   const isaContribAnnual =
     profile.ssIsaMonthly * 12 + profile.lisaMonthly * 12;
-  const marginal = marginalIncomeRate(profile.grossSalary, profile.region);
+  const marginal = marginalIncomeRate(profile.grossSalary, profile.region, pack);
 
-  const reliefSaved = sipp * Math.max(0, marginal - 0); // total relief on SIPP
-  const isaEquivalent = sipp * 0; // ISA gets no relief
+  const reliefSaved = sipp * Math.max(0, marginal - 0);
+  const isaEquivalent = sipp * 0;
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Allowance usage</CardTitle>
+          <CardTitle className="text-sm">Allowance usage ({pack.label})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <AllowanceBar label="ISA" used={isaContribAnnual} cap={ISA_ANNUAL_ALLOWANCE} />
-          <AllowanceBar label="Pension AA" used={totalPensionContrib} cap={PENSION_ANNUAL_ALLOWANCE} />
-          <AllowanceBar label="CGT exempt" used={0} cap={CGT_ANNUAL_EXEMPT} />
-          <AllowanceBar label="Dividend" used={0} cap={DIVIDEND_ALLOWANCE} />
-          <AllowanceBar label="Personal Savings" used={0} cap={PSA_BASIC} />
+          <AllowanceBar label="ISA" used={isaContribAnnual} cap={pack.isaAnnualAllowance} />
+          <AllowanceBar label="Pension AA" used={totalPensionContrib} cap={pack.pensionAnnualAllowance} />
+          <AllowanceBar label="CGT exempt" used={0} cap={pack.cgtAnnualExempt} />
+          <AllowanceBar label="Dividend" used={0} cap={pack.dividendAllowance} />
+          <AllowanceBar label="Personal Savings" used={0} cap={pack.psaBasic} />
         </CardContent>
       </Card>
 

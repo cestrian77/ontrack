@@ -4,7 +4,10 @@ import { runProjection } from "@/engine/project/runProjection";
 import { computeFire } from "@/engine/fire/fire";
 import { generateInsights } from "@/engine/insights/insights";
 import { useProfileStore } from "@/store/useProfileStore";
+import { useUiStore } from "@/store/useUiStore";
+import { baseTaxYearPack } from "@/lib/taxYearContext";
 import { InsightRepo } from "@/db/repository";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
 
 export function useDebounced<T>(value: T, ms = 300): T {
   const [d, setD] = useState(value);
@@ -18,15 +21,21 @@ export function useDebounced<T>(value: T, ms = 300): T {
 export function useProjection(profile?: UserProfile): {
   projection: Projection;
   fire: FireMetrics;
+  taxYearPack: TaxYearPack;
 } {
   const stored = useProfileStore((s) => s.profile);
+  const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const p = profile ?? stored;
   const debounced = useDebounced(p, 300);
+  const taxYearPack = useMemo(
+    () => baseTaxYearPack(analysisTaxYearLabel),
+    [analysisTaxYearLabel],
+  );
   return useMemo(() => {
-    const projection = runProjection(debounced);
-    const fire = computeFire(debounced, projection);
-    return { projection, fire };
-  }, [debounced]);
+    const projection = runProjection(debounced, { taxYearPack });
+    const fire = computeFire(debounced, projection, taxYearPack);
+    return { projection, fire, taxYearPack };
+  }, [debounced, taxYearPack]);
 }
 
 export function useDismissedInsights(): {
@@ -44,11 +53,11 @@ export function useDismissedInsights(): {
 }
 
 export function useInsights() {
-  const { projection, fire } = useProjection();
+  const { projection, fire, taxYearPack } = useProjection();
   const profile = useProfileStore((s) => s.profile);
   const all = useMemo(
-    () => generateInsights({ profile, projection, fire }),
-    [profile, projection, fire],
+    () => generateInsights({ profile, projection, fire, taxYearPack }),
+    [profile, projection, fire, taxYearPack],
   );
-  return { all, projection, fire };
+  return { all, projection, fire, taxYearPack };
 }

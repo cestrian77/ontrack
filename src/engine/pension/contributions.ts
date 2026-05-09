@@ -1,8 +1,5 @@
-import {
-  ADJUSTED_INCOME_TAPER_THRESHOLD,
-  PENSION_ANNUAL_ALLOWANCE,
-  TAPERED_AA_FLOOR,
-} from "@/engine/constants/uk";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
+import { currentTaxYearPack } from "@/engine/constants/taxYears";
 import type { Region } from "@/engine/types";
 import { incomeTax, marginalIncomeRate } from "@/engine/tax/incomeTax";
 import { nationalInsurance } from "@/engine/tax/ni";
@@ -27,13 +24,17 @@ export function workplaceContribAnnual(
  * Tapered Annual Allowance (PRD §5.4.2).
  * Adjusted income > £260k tapers AA by £1 per £2 above; floor £10k.
  */
-export function annualAllowance(adjustedIncome: number, mpaaTriggered = false): number {
-  if (mpaaTriggered) return TAPERED_AA_FLOOR;
-  if (adjustedIncome <= ADJUSTED_INCOME_TAPER_THRESHOLD) {
-    return PENSION_ANNUAL_ALLOWANCE;
+export function annualAllowance(
+  adjustedIncome: number,
+  mpaaTriggered = false,
+  pack: TaxYearPack = currentTaxYearPack(),
+): number {
+  if (mpaaTriggered) return pack.taperedAaFloor;
+  if (adjustedIncome <= pack.adjustedIncomeTaperThreshold) {
+    return pack.pensionAnnualAllowance;
   }
-  const reduction = (adjustedIncome - ADJUSTED_INCOME_TAPER_THRESHOLD) / 2;
-  return Math.max(TAPERED_AA_FLOOR, PENSION_ANNUAL_ALLOWANCE - reduction);
+  const reduction = (adjustedIncome - pack.adjustedIncomeTaperThreshold) / 2;
+  return Math.max(pack.taperedAaFloor, pack.pensionAnnualAllowance - reduction);
 }
 
 /**
@@ -44,19 +45,18 @@ export function pensionNetCost(
   gross: number,
   grossSalary: number,
   region: Region,
+  pack: TaxYearPack = currentTaxYearPack(),
 ): {
   sacrifice: number;
   sippNet: number;
   marginalRate: number;
 } {
-  const marginal = marginalIncomeRate(grossSalary, region);
-  // Salary sacrifice: full tax + NI saving on the sacrificed amount.
-  const taxBefore = incomeTax(grossSalary, region);
-  const niBefore = nationalInsurance(grossSalary);
-  const taxAfter = incomeTax(grossSalary - gross, region);
-  const niAfter = nationalInsurance(grossSalary - gross);
+  const marginal = marginalIncomeRate(grossSalary, region, pack);
+  const taxBefore = incomeTax(grossSalary, region, pack);
+  const niBefore = nationalInsurance(grossSalary, pack);
+  const taxAfter = incomeTax(grossSalary - gross, region, pack);
+  const niAfter = nationalInsurance(grossSalary - gross, pack);
   const sacrifice = gross - (taxBefore - taxAfter) - (niBefore - niAfter);
-  // Relief at source: pay 80% of gross out of net pay; HR/AR claim back via SA.
   const reliefAdditional = Math.max(0, marginal - 0.2);
   const sippNet = gross * 0.8 - gross * reliefAdditional;
   return { sacrifice, sippNet, marginalRate: marginal };

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { baseTaxYearPack, scenarioTaxYearPack } from "@/lib/taxYearContext";
 import {
   TAX_YEAR_PACKS,
+  currentTaxYearPack,
   isCurrentTaxYearRegistered,
   resolveTaxYearPack,
   taxYearLabelForDate,
@@ -52,5 +54,25 @@ describe("UK tax-year resolver", () => {
       expect(p.pensionAnnualAllowance).toBeGreaterThan(0);
       expect(p.statePensionAnnualFull).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("taxYearContext helpers", () => {
+  it("baseTaxYearPack uses calendar when label is null", () => {
+    expect(baseTaxYearPack(null).label).toBe(currentTaxYearPack().label);
+  });
+
+  it("baseTaxYearPack resolves explicit label", () => {
+    expect(baseTaxYearPack("2025/26").label).toBe("2025/26");
+  });
+
+  it("scenarioTaxYearPack overrides base when set", () => {
+    const base = taxYearPackByLabel("2025/26");
+    expect(scenarioTaxYearPack(base, "2026/27").label).toBe("2026/27");
+  });
+
+  it("scenarioTaxYearPack falls back to base when unset", () => {
+    const base = taxYearPackByLabel("2024/25");
+    expect(scenarioTaxYearPack(base, undefined).label).toBe("2024/25");
   });
 });

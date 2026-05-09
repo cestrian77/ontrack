@@ -19,7 +19,7 @@ import { InsightRepo } from "@/db/repository";
 
 export default function Dashboard() {
   const profile = useProfileStore((s) => s.profile);
-  const { projection, fire } = useProjection();
+  const { projection, fire, taxYearPack } = useProjection();
   const allScenarios = useScenarioStore((s) => s.scenarios);
   const selectedIds = useUiStore((s) => s.selectedScenarioIds);
   const selectedScenarios = useMemo(
@@ -29,10 +29,10 @@ export default function Dashboard() {
 
   const { dismissed, reload } = useDismissedInsights();
   const insights = useMemo(() => {
-    return generateInsights({ profile, projection, fire }).filter(
+    return generateInsights({ profile, projection, fire, taxYearPack }).filter(
       (i) => !dismissed.has(i.id),
     );
-  }, [profile, projection, fire, dismissed]);
+  }, [profile, projection, fire, taxYearPack, dismissed]);
 
   const dismiss = async (id: string) => {
     await InsightRepo.dismiss(id);
@@ -80,7 +80,12 @@ export default function Dashboard() {
           <InflationToggle />
         </CardHeader>
         <CardContent>
-          <CashflowChart profile={profile} projection={projection} height={300} />
+          <CashflowChart
+            profile={profile}
+            projection={projection}
+            taxYearPack={taxYearPack}
+            height={300}
+          />
         </CardContent>
       </Card>
 
@@ -113,7 +118,7 @@ export default function Dashboard() {
             </p>
           </CardHeader>
           <CardContent>
-            <IncomeStack profile={profile} projection={projection} />
+            <IncomeStack profile={profile} projection={projection} taxYearPack={taxYearPack} />
           </CardContent>
         </Card>
       </div>
@@ -141,7 +146,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         <div className="lg:col-span-2">
-          <TaxDashboard profile={profile} />
+          <TaxDashboard profile={profile} taxYearPack={taxYearPack} />
         </div>
       </div>
     </div>

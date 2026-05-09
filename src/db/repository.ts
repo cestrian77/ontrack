@@ -53,12 +53,14 @@ export const InsightRepo = {
 export async function exportAll(): Promise<string> {
   const profile = await db.profile.get("singleton");
   const scenarios = await db.scenarios.toArray();
+  const insightDismissals = await db.insights.toArray();
   return JSON.stringify(
     {
       version: 1,
       exportedAt: new Date().toISOString(),
       profile,
       scenarios,
+      insightDismissals,
     },
     null,
     2,
@@ -68,12 +70,24 @@ export async function exportAll(): Promise<string> {
 export async function importAll(json: string): Promise<void> {
   const parsed = JSON.parse(json);
   if (parsed.version !== 1) throw new Error("Unsupported export version");
-  await db.transaction("rw", db.profile, db.scenarios, async () => {
+  await db.transaction("rw", db.profile, db.scenarios, db.insights, async () => {
     await db.profile.clear();
     await db.scenarios.clear();
+    await db.insights.clear();
     if (parsed.profile) await db.profile.put(parsed.profile);
     if (Array.isArray(parsed.scenarios)) {
       for (const s of parsed.scenarios) await db.scenarios.put(s);
+    }
+    if (Array.isArray(parsed.insightDismissals)) {
+      for (const row of parsed.insightDismissals) {
+        if (
+          row &&
+          typeof row.id === "string" &&
+          typeof row.dismissedAt === "string"
+        ) {
+          await db.insights.put({ id: row.id, dismissedAt: row.dismissedAt });
+        }
+      }
     }
   });
 }

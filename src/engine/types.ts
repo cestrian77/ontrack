@@ -130,6 +130,8 @@ export interface PropertySaleParam {
 }
 
 export interface ScenarioParams {
+  /** If set, projection/tax for this scenario uses this frozen pack instead of the global analysis year. */
+  taxYearLabel?: string;
   pensionBoost?: MonthlyBoostParams;
   isaBoost?: MonthlyBoostParams;
   mortgageOverpay?: MonthlyBoostParams;

@@ -4,6 +4,7 @@ import { ArrowRight, BarChart3, Flame, Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useProfileStore } from "@/store/useProfileStore";
+import { taxYearLabelForDate } from "@/engine/constants/uk";
 
 export default function Welcome() {
   const navigate = useNavigate();
@@ -73,13 +74,27 @@ export default function Welcome() {
           <FeatureCard
             Icon={ShieldCheck}
             title="UK-aware modelling"
-            body="2024/25 tax bands, ISA + pension wrappers, Section 24 BTL, ISA bridge logic."
+            body={`${taxYearLabelForDate(new Date())} tax bands, ISA + pension wrappers, Section 24 BTL, ISA bridge logic.`}
           />
         </div>
 
-        <div className="mt-12 flex items-center gap-2 text-xs text-muted-foreground">
-          <Lock className="h-3.5 w-3.5" /> Local-first. No financial data leaves
-          your device.
+        <div className="mt-12 space-y-1 text-xs text-muted-foreground max-w-xl">
+          <div className="flex items-center gap-2">
+            <Lock className="h-3.5 w-3.5 shrink-0" /> Local-first. No financial
+            data leaves your device.
+          </div>
+          <p>
+            Your plan is saved in this browser (IndexedDB). For a portable backup,
+            use Settings → Export JSON; import that file on this or another browser
+            to restore. PDF reports are snapshots only — use JSON to restore inputs.
+          </p>
+          <p>
+            <Link to="/help" className="text-primary underline underline-offset-2">
+              Help, glossary, and disclaimers
+            </Link>
+            {" "}
+            (also under Help in the app sidebar when you&apos;re using the planner).
+          </p>
         </div>
       </div>
     </div>

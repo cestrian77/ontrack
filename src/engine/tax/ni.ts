@@ -1,7 +1,11 @@
-import { NI_BANDS } from "@/engine/constants/uk";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
+import { currentTaxYearPack } from "@/engine/constants/taxYears";
 import { applyBands } from "./incomeTax";
 
-export function nationalInsurance(income: number): number {
+export function nationalInsurance(
+  income: number,
+  pack: TaxYearPack = currentTaxYearPack(),
+): number {
   if (income <= 0) return 0;
-  return applyBands(income, NI_BANDS);
+  return applyBands(income, pack.niBands);
 }

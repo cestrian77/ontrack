@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
 import {
   annualNetEmploymentIncome,
@@ -22,6 +23,7 @@ import { useUiStore } from "@/store/useUiStore";
 interface Props {
   profile: UserProfile;
   projection: Projection;
+  taxYearPack: TaxYearPack;
   height?: number;
 }
 
@@ -29,11 +31,12 @@ interface Props {
  * Annual cash inflow: employment take-home + other income + BTL net while working;
  * in retirement, state + DB + drawdown + BTL net. Respects Real/Nominal toggle.
  */
-export function CashflowChart({ profile, projection, height = 280 }: Props) {
+export function CashflowChart({ profile, projection, taxYearPack, height = 280 }: Props) {
   const mode = useUiStore((s) => s.inflationToggle);
   const cpi = profile.cpi;
 
-  const netEmployed = annualNetEmploymentIncome(profile) + annualOtherIncome(profile);
+  const netEmployed =
+    annualNetEmploymentIncome(profile, taxYearPack) + annualOtherIncome(profile);
 
   const data = useMemo(() => {
     return projection.years.map((y, i) => {

@@ -9,19 +9,20 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
 import { gbp } from "@/lib/utils";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
-import { PERSONAL_ALLOWANCE, BASIC_RATE_THRESHOLD_EW } from "@/engine/constants/uk";
 
 interface Props {
   profile: UserProfile;
   projection: Projection;
+  taxYearPack: TaxYearPack;
 }
 
 const COLOURS = ["#1e3a8a", "#0f766e", "#3b82f6", "#d4a017", "#10b981", "#a855f7"];
 
-export function IncomeStack({ profile, projection }: Props) {
+export function IncomeStack({ profile, projection, taxYearPack }: Props) {
   const atRet = projection.years.find((y) => y.age === profile.retirementTargetAge);
   if (!atRet) return null;
   const data = [
@@ -62,12 +63,12 @@ export function IncomeStack({ profile, projection }: Props) {
           label={{ value: "Target", fill: "hsl(var(--accent))", fontSize: 11, position: "top" }}
         />
         <ReferenceLine
-          x={PERSONAL_ALLOWANCE}
+          x={taxYearPack.personalAllowance}
           stroke="hsl(var(--muted-foreground))"
           strokeDasharray="2 4"
         />
         <ReferenceLine
-          x={BASIC_RATE_THRESHOLD_EW}
+          x={taxYearPack.basicRateThresholdEW}
           stroke="hsl(var(--muted-foreground))"
           strokeDasharray="2 4"
         />

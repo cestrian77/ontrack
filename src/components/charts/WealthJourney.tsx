@@ -16,6 +16,7 @@ import { applyScenario } from "@/engine/scenarios/templates";
 import { runProjection } from "@/engine/project/runProjection";
 import { computeFire } from "@/engine/fire/fire";
 import { gbp, nominalise } from "@/lib/utils";
+import { baseTaxYearPack, scenarioTaxYearPack } from "@/lib/taxYearContext";
 import { PROJECTION_ASSET_LAYERS, type ProjectionAssetKey } from "@/lib/projection-assets";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
 import { useUiStore } from "@/store/useUiStore";
@@ -40,11 +41,18 @@ const COLOURS: Record<ProjectionAssetKey, string> = {
 
 export function WealthJourney({ profile, projection, scenarios = [], height = 360 }: Props) {
   const mode = useUiStore((s) => s.inflationToggle);
+  const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const cpi = profile.cpi;
+  const basePack = useMemo(
+    () => baseTaxYearPack(analysisTaxYearLabel),
+    [analysisTaxYearLabel],
+  );
 
   const data = useMemo(() => {
     const scenarioProjections = scenarios.map((s) =>
-      runProjection(applyScenario(profile, s)),
+      runProjection(applyScenario(profile, s), {
+        taxYearPack: scenarioTaxYearPack(basePack, s.params?.taxYearLabel),
+      }),
     );
     return projection.years.map((y, i) => {
       const factor = mode === "nominal" ? Math.pow(1 + cpi, i) : 1;
@@ -63,9 +71,9 @@ export function WealthJourney({ profile, projection, scenarios = [], height = 36
       });
       return row;
     });
-  }, [projection, mode, cpi, scenarios, profile]);
+  }, [projection, mode, cpi, scenarios, profile, basePack]);
 
-  const fire = computeFire(profile, projection);
+  const fire = computeFire(profile, projection, basePack);
   const fireY =
     mode === "nominal"
       ? nominalise(

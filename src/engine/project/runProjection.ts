@@ -4,18 +4,23 @@ import type {
   ProjectionYear,
   UserProfile,
 } from "@/engine/types";
+import type { TaxYearPack } from "@/engine/constants/taxYears";
+import { currentTaxYearPack } from "@/engine/constants/taxYears";
 import { dbAnnualIncomeAtAge } from "@/engine/pension/db";
 import {
   sippGrossAnnual,
   workplaceContribAnnual,
 } from "@/engine/pension/contributions";
-import { STATE_PENSION_ANNUAL_FULL } from "@/engine/constants/uk";
 import { compoundAnnual, lisaAnnualGrowth } from "@/engine/wrappers/isa";
 import { giaAnnualGrowth } from "@/engine/wrappers/gia";
 import { balanceAfterMonths } from "@/engine/property/mortgage";
 import { btlAnnualCashflow } from "@/engine/btl/cashflow";
 
 const HORIZON_AGE = 100;
+
+export interface RunProjectionOptions {
+  taxYearPack?: TaxYearPack;
+}
 
 function rampedMonthlyExtra(adj: MonthlyBoostParams | undefined, yearIndex: number): number {
   if (!adj) return 0;
@@ -37,7 +42,11 @@ export function ageFromDob(dob: string, asOf = new Date()): number {
  * Annual-step deterministic projection from current age to 100 (PRD §5).
  * All values held in real (today's £) terms; inflation handled at display time.
  */
-export function runProjection(profile: UserProfile): Projection {
+export function runProjection(
+  profile: UserProfile,
+  options?: RunProjectionOptions,
+): Projection {
+  const taxYearPack = options?.taxYearPack ?? currentTaxYearPack();
   const currentAge = ageFromDob(profile.dateOfBirth);
   const startYear = new Date().getFullYear();
   const retirementAge = profile.retirementTargetAge;
@@ -158,6 +167,7 @@ export function runProjection(profile: UserProfile): Projection {
         rentScale,
         mortgageBalance: btlBalances[idx],
         mortgageTermYearsRemaining: termRem,
+        taxYearPack,
       });
       btlCashflowNet += cf.netCashflow;
     });
@@ -170,8 +180,6 @@ export function runProjection(profile: UserProfile): Projection {
       age >= spa
         ? profile.statePensionWeekly * 52 * Math.pow(1 + rSpLock, yearsClaimingSp)
         : 0;
-    void STATE_PENSION_ANNUAL_FULL;
-
     const dbIncome = dbAnnualIncomeAtAge(profile, age);
 
     // Drawdown: in retirement, withdraw from ISA first, then pension, to meet target net income.

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProfileStore } from "@/store/useProfileStore";
+import { useProjection } from "@/lib/hooks";
 import { TaxDashboard } from "@/components/charts/TaxDashboard";
 import { pensionNetCost } from "@/engine/pension/contributions";
 import { gbp, pct } from "@/lib/utils";
@@ -7,12 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Tax() {
   const profile = useProfileStore((s) => s.profile);
-  const sample100 = pensionNetCost(100, profile.grossSalary, profile.region);
-  const sample1000 = pensionNetCost(1000, profile.grossSalary, profile.region);
+  const { taxYearPack } = useProjection();
+  const sample100 = pensionNetCost(100, profile.grossSalary, profile.region, taxYearPack);
+  const sample1000 = pensionNetCost(1000, profile.grossSalary, profile.region, taxYearPack);
 
   return (
     <div className="space-y-6">
-      <TaxDashboard profile={profile} />
+      <TaxDashboard profile={profile} taxYearPack={taxYearPack} />
 
       <Card>
         <CardHeader>

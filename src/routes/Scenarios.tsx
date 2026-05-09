@@ -14,8 +14,10 @@ import {
   summarizeScenario,
 } from "@/engine/scenarios/templates";
 import { useProjection } from "@/lib/hooks";
+import { scenarioTaxYearPack } from "@/lib/taxYearContext";
 import { runProjection } from "@/engine/project/runProjection";
 import { computeFire } from "@/engine/fire/fire";
+import { TAX_YEAR_PACKS } from "@/engine/constants/taxYears";
 import { gbp } from "@/lib/utils";
 import { WealthJourney } from "@/components/charts/WealthJourney";
 import type {
@@ -36,7 +38,7 @@ import {
 
 export default function Scenarios() {
   const profile = useProfileStore((s) => s.profile);
-  const { projection: baseProj, fire: baseFire } = useProjection();
+  const { projection: baseProj, fire: baseFire, taxYearPack: basePack } = useProjection();
   const scenarios = useScenarioStore((s) => s.scenarios);
   const upsert = useScenarioStore((s) => s.upsert);
   const remove = useScenarioStore((s) => s.remove);
@@ -55,12 +57,13 @@ export default function Scenarios() {
   const compareRows = useMemo(() => {
     return selected.map((s) => {
       const next = applyScenario(profile, s);
-      const proj = runProjection(next);
-      const f = computeFire(next, proj);
+      const pack = scenarioTaxYearPack(basePack, s.params?.taxYearLabel);
+      const proj = runProjection(next, { taxYearPack: pack });
+      const f = computeFire(next, proj, pack);
       const atRet = proj.years.find((y) => y.age === next.retirementTargetAge);
       return { scenario: s, fire: f, projection: proj, atRet };
     });
-  }, [selected, profile]);
+  }, [selected, profile, basePack]);
 
   const baseAtRet = baseProj.years.find((y) => y.age === profile.retirementTargetAge);
 
@@ -133,7 +136,7 @@ export default function Scenarios() {
             <ul className="space-y-2">
               {scenarios.map((s) => {
                 const isSelected = selectedIds.includes(s.id);
-                const cfg = s.templateId && scenarioTemplateConfigurable(s.templateId);
+                const cfg = Boolean(s.templateId && scenarioTemplateConfigurable(s.templateId));
                 const sub = summarizeScenario(s);
                 return (
                   <li
@@ -156,17 +159,23 @@ export default function Scenarios() {
                         <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>
                       )}
                     </div>
-                    {cfg && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0"
-                        onClick={() => setEditing({ ...s, params: { ...s.params } })}
-                        aria-label="Configure scenario"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={() =>
+                        setEditing({
+                          ...s,
+                          params: {
+                            ...defaultParamsForTemplate(s.templateId ?? "", profile),
+                            ...s.params,
+                          },
+                        })
+                      }
+                      aria-label={cfg ? "Configure scenario" : "Tax year and rules"}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -353,6 +362,33 @@ function ScenarioParamsEditor({
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Field
+            label="Tax year for this scenario"
+            hint="Leave as global default to follow Settings, or pick a frozen ruleset for what-if comparisons."
+          >
+            <Select
+              value={params.taxYearLabel ?? "__global__"}
+              onValueChange={(v) =>
+                setParams((p) => ({
+                  ...p,
+                  taxYearLabel: v === "__global__" ? undefined : v,
+                }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__global__">Match global (Settings)</SelectItem>
+                {TAX_YEAR_PACKS.map((tp) => (
+                  <SelectItem key={tp.label} value={tp.label}>
+                    {tp.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
           {tid === "boost_pension" && (
             <BoostFields
               label="SIPP monthly change"

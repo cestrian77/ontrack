@@ -321,9 +321,12 @@ export function scenarioTemplateConfigurable(templateId: string): boolean {
 }
 
 export function summarizeScenario(s: Scenario): string {
-  if (!s.templateId || !s.params) return "";
-  const p = s.params;
   const parts: string[] = [];
+  if (s.params?.taxYearLabel) {
+    parts.push(`Tax rules ${s.params.taxYearLabel}`);
+  }
+  if (!s.templateId || !s.params) return parts.join(" · ");
+  const p = s.params;
   if (p.pensionBoost) {
     const sign = p.pensionBoost.monthlyExtra > 0 ? "+" : "";
     parts.push(
