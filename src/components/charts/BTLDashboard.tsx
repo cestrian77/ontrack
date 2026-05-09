@@ -13,8 +13,9 @@ import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
 import { btlAnnualCashflow, btlYields } from "@/engine/btl/cashflow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { gbp } from "@/lib/utils";
+import { gbp, nominalise } from "@/lib/utils";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
+import { useUiStore } from "@/store/useUiStore";
 
 interface Props {
   profile: UserProfile;
@@ -23,6 +24,8 @@ interface Props {
 }
 
 export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
+  const mode = useUiStore((s) => s.inflationToggle);
+
   if (profile.btlProperties.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
@@ -38,10 +41,13 @@ export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
     return { p, cf, y };
   });
 
-  const trajectory = projection.years.map((y) => ({
+  const trajectory = projection.years.map((y, i) => ({
     age: y.age,
-    equity: y.btlEquity,
-    cashflow: y.btlCashflowNet,
+    equity: mode === "nominal" ? nominalise(y.btlEquity, profile.cpi, i) : y.btlEquity,
+    cashflow:
+      mode === "nominal"
+        ? nominalise(y.btlCashflowNet, profile.cpi, i)
+        : y.btlCashflowNet,
   }));
 
   return (
