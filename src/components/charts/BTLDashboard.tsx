@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
-import { btlAnnualCashflow, btlYields } from "@/engine/btl/cashflow";
+import { buildBtlPropertyReportBlocks } from "@/lib/taxDashboardReport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { gbp, nominalise } from "@/lib/utils";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
@@ -33,13 +33,7 @@ export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
       </div>
     );
   }
-  const cards = profile.btlProperties.map((p) => {
-    const cf = btlAnnualCashflow(p, profile.grossSalary, profile.region, {
-      taxYearPack,
-    });
-    const y = btlYields(p, cf);
-    return { p, cf, y };
-  });
+  const btlBlocks = buildBtlPropertyReportBlocks(profile, taxYearPack);
 
   const trajectory = projection.years.map((y, i) => ({
     age: y.age,
@@ -53,24 +47,26 @@ export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {cards.map(({ p, cf, y }, idx) => (
-          <Card key={p.id}>
+        {btlBlocks.map((block) => (
+          <Card key={block.propertyId}>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">
-                {p.label?.trim() || `BTL ${idx + 1}`}: {gbp(p.value)}
-              </CardTitle>
+              <CardTitle className="text-sm">{block.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <Row label="Gross yield" value={`${y.grossYield.toFixed(2)}%`} />
-              <Row label="Net yield" value={`${y.netYield.toFixed(2)}%`} />
-              <Row label="Cash-on-cash" value={`${y.cashOnCash.toFixed(2)}%`} />
-              <Row
-                label="Monthly cashflow (post-tax)"
-                value={gbp(cf.netCashflow / 12)}
-                positive={cf.netCashflow >= 0}
-              />
-              <Row label="Current equity" value={gbp(p.value - p.mortgageBalance)} />
-              <Row label="S24 credit" value={gbp(cf.s24Credit)} />
+              {block.rows.map((r) => (
+                <Row
+                  key={r.label}
+                  label={r.label}
+                  value={r.value}
+                  positive={
+                    r.emphasis === "positive"
+                      ? true
+                      : r.emphasis === "negative"
+                        ? false
+                        : undefined
+                  }
+                />
+              ))}
             </CardContent>
           </Card>
         ))}

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DISCLAIMER_FULL } from "@/lib/legalCopy";
+import { GLOSSARY_ENTRIES } from "@/lib/glossaryTerms";
 
 export default function Help() {
   return (
@@ -38,6 +39,29 @@ export default function Help() {
 
       <Card>
         <CardHeader>
+          <CardTitle>FIRE numbers (web)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            The <strong className="text-foreground">classic FIRE number</strong> is your target retirement income divided by your safe withdrawal rate (SWR), as if the whole income had to come from an invested pot.
+          </p>
+          <p>
+            The <strong className="text-foreground">effective FIRE number</strong> uses the same SWR on the income still needed after you optionally count projected{" "}
+            <strong className="text-foreground">State Pension</strong>, <strong className="text-foreground">defined benefit</strong> income, and{" "}
+            <strong className="text-foreground">buy-to-let net cashflow</strong> (from your projection at a chosen reference age). That matches how drawdown in the engine already reduces withdrawals when those sources exist.
+          </p>
+          <p>
+            <strong className="text-foreground">FIRE progress</strong> compares your chosen <strong className="text-foreground">FIRE pot</strong> (which wrappers to include) to the effective number. Coast FIRE only applies when pension is included in that pot.
+          </p>
+          <p>
+            Configure this on the <Link className="text-primary underline underline-offset-2" to="/fire">FIRE</Link> page or under{" "}
+            <Link className="text-primary underline underline-offset-2" to="/settings">Settings</Link>. Couple / family views use the primary account holder’s FIRE calculation settings for merged metrics; the partner has their own copy for solo analysis.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Tax assumptions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
@@ -62,19 +86,31 @@ export default function Help() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Real (today&apos;s £) vs nominal</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Real (today&apos;s £)</strong> shows amounts in constant purchasing power: what those figures would mean if a pound in the future bought the same as a pound today. OnTrack&apos;s projection engine works in real terms so you can compare different ages without general inflation making later years look artificially large.
+          </p>
+          <p>
+            <strong className="text-foreground">Nominal</strong> shows amounts in the pounds of each future year, including the effect of rising prices. The same real wealth appears as bigger nominal numbers over time when inflation is positive. Charts use your <strong className="text-foreground">CPI inflation</strong> assumption from Settings to convert between the two for display.
+          </p>
+          <p>
+            Use real for &quot;will I be better off in terms of spending power?&quot; Use nominal when you want to see headline pound totals that grow with inflation.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card id="glossary" className="scroll-mt-[calc(var(--site-header-height)+0.75rem)]">
         <CardHeader>
           <CardTitle>Glossary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          <Gloss term="ISA" body="Individual Savings Account. Growth and withdrawals are tax-free. Annual subscription limits apply across ISA types." />
-          <Gloss term="LISA" body="Lifetime ISA: government bonus on contributions, limits on age and on withdrawals for first home or from age 60." />
-          <Gloss term="Annual allowance (pension)" body="Maximum pension contributions that receive tax relief per year, with taper for high earners and MPAA after flexi-access." />
-          <Gloss term="SIPP" body="Self-invested personal pension. Personal contributions typically get basic-rate relief at source; higher/additional rate via Self Assessment." />
-          <Gloss term="Section 24" body="Restriction of mortgage interest relief on residential BTL: finance costs partly replaced by a basic-rate tax credit in the model." />
-          <Gloss term="NMPA / SPA" body="Normal minimum pension age for accessing DC pensions, and state pension age for new state pension." />
-          <Gloss term="ISA bridge" body="Using ISA withdrawals to fund living costs between retiring and reaching pension access age." />
-          <Gloss term="FIRE" body="Financial Independence, Retire Early — here: variants based on your target income and safe withdrawal rate." />
+          {GLOSSARY_ENTRIES.map((entry) => (
+            <Gloss key={entry.term} term={entry.term} body={entry.body} />
+          ))}
         </CardContent>
       </Card>
 

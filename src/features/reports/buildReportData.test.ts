@@ -33,15 +33,17 @@ describe("buildReportData", () => {
       },
     ];
 
+    const pack = currentTaxYearPack();
     const data = buildReportData({
       profile,
       primaryProfile: profile,
       projection,
       fire,
-      baseTaxYearPack: currentTaxYearPack(),
+      baseTaxYearPack: pack,
       scenarios,
       selectedScenarioIds: ["s1"],
       insights,
+      analysisTaxYearLabel: pack.label,
     });
 
     expect(data.dashboardMetrics.length).toBeGreaterThan(0);
@@ -50,6 +52,10 @@ describe("buildReportData", () => {
     expect(data.activeInsights).toHaveLength(1);
     expect(data.scenarioComparison).toHaveLength(1);
     expect(data.scenarioComparison[0]?.scenarioName).toBe("Boost ISA");
+    expect(data.scenarioComparison[0]?.templateName).toBe("Change ISA contributions");
+    expect(data.scenarioComparison[0]?.summary).toContain("ISA");
+    expect(data.fireDetailMetrics.length).toBeGreaterThan(0);
+    expect(data.taxPersonSnapshots).toHaveLength(1);
     expect(data.chartImages).toBeUndefined();
   });
 });

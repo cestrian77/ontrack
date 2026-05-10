@@ -36,15 +36,17 @@ describe("downloadReportPdf", () => {
     const profile = makeDefaultProfile();
     const projection = runProjection(profile);
     const fire = computeFire(profile, projection);
+    const pack = currentTaxYearPack();
     const data = buildReportData({
       profile,
       primaryProfile: profile,
       projection,
       fire,
-      baseTaxYearPack: currentTaxYearPack(),
+      baseTaxYearPack: pack,
       scenarios: [],
       selectedScenarioIds: [],
       insights: [],
+      analysisTaxYearLabel: pack.label,
     });
 
     await downloadReportPdf({

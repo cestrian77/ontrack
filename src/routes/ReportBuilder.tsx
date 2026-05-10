@@ -53,6 +53,7 @@ export default function ReportBuilder() {
         scenarios,
         selectedScenarioIds,
         insights: activeInsights,
+        analysisTaxYearLabel: analysisTaxYearLabel ?? taxYearPack.label,
         profileDisplayName: isHouseholdAnalysis
           ? "Household (indicative merge)"
           : undefined,
@@ -68,6 +69,7 @@ export default function ReportBuilder() {
       selectedScenarioIds,
       taxYearPack,
       isHouseholdAnalysis,
+      analysisTaxYearLabel,
     ],
   );
 
@@ -101,9 +103,16 @@ export default function ReportBuilder() {
       });
       const hasChart =
         chartImages.wealthJourney !== undefined || chartImages.cashflow !== undefined;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const isFullPersonalView =
+        sections.length === FULL_REPORT_SECTION_IDS.length &&
+        FULL_REPORT_SECTION_IDS.every((id) => sections.includes(id));
       await downloadReportPdf({
         data: { ...reportData, ...(hasChart ? { chartImages } : {}) },
         sections,
+        filename: isFullPersonalView
+          ? `ontrack-personal-view-${dateStr}.pdf`
+          : `ontrack-report-${dateStr}.pdf`,
       });
     } finally {
       setIsGenerating(false);
@@ -116,7 +125,8 @@ export default function ReportBuilder() {
         <CardHeader>
           <CardTitle>PDF report builder</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Build a custom PDF from core screens only. Settings content is always excluded.
+            Export a branded On-Track Personal View (dashboard, FIRE, scenarios, tax &amp; BTL,
+            charts, glossary). Settings forms and raw JSON are not included.
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -158,7 +168,7 @@ export default function ReportBuilder() {
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Button onClick={() => void generate(FULL_REPORT_SECTION_IDS)} disabled={isGenerating}>
-            <FileText className="h-4 w-4" /> Complete PDF report
+            <FileText className="h-4 w-4" /> Personal View (full)
           </Button>
           <Button
             variant="outline"
