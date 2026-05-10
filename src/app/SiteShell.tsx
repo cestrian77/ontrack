@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 import { DISCLAIMER_SHORT } from "@/lib/legalCopy";
@@ -72,18 +72,26 @@ export function SiteShell() {
 }
 
 function SiteNavLink({ to, children }: { to: string; children: React.ReactNode }) {
+  const location = useLocation();
   const path = to.includes("#") ? to.slice(0, to.indexOf("#")) : to;
+  const toHash = to.includes("#") ? to.slice(to.indexOf("#")) : null;
+
   return (
     <NavLink
       to={to}
-      className={({ isActive }) =>
-        cn(
+      className={({ isActive }) => {
+        let active = isActive;
+        // Same pathname (/help); NavLink ignores hash — only one of Glossary vs Help should be active.
+        if (path === "/help" && location.pathname === "/help") {
+          active = toHash != null ? location.hash === toHash : location.hash !== "#glossary";
+        }
+        return cn(
           "px-2 py-1.5 rounded-md whitespace-nowrap shrink-0 text-sm font-medium transition-colors",
-          isActive
+          active
             ? "bg-secondary text-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
-        )
-      }
+        );
+      }}
       end={path === "/"}
     >
       {children}

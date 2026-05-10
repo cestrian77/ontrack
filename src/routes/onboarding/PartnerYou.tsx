@@ -41,6 +41,7 @@ export default function OnboardingPartnerYou() {
         <Field label="Date of birth" hint="Partner's date of birth.">
           <Input
             type="date"
+            autoComplete="bday"
             value={p.dateOfBirth}
             max={new Date().toISOString().slice(0, 10)}
             onChange={(e) => updatePartner({ dateOfBirth: e.target.value })}

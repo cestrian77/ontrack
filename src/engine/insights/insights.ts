@@ -21,7 +21,7 @@ type Rule = (ctx: InsightContext) => Insight | null;
 const onTrack: Rule = ({ profile, projection, fire }) => {
   const atTarget = projection.years.find((y) => y.age === profile.retirementTargetAge);
   if (!atTarget) return null;
-  if (atTarget.investableNetWorth >= fire.fireNumber) {
+  if (fire.firePotAtRetirement >= fire.effectiveFireNumber) {
     return {
       id: "on_track_ahead",
       category: "on_track",
@@ -32,7 +32,7 @@ const onTrack: Rule = ({ profile, projection, fire }) => {
       actionRoute: "/dashboard",
     };
   }
-  const shortfall = fire.fireNumber - atTarget.investableNetWorth;
+  const shortfall = fire.effectiveFireNumber - fire.firePotAtRetirement;
   return {
     id: "on_track_short",
     category: "on_track",
@@ -69,26 +69,28 @@ const isaBridgeRule: Rule = ({ profile, projection }) => {
 };
 
 const coastFireRule: Rule = ({ fire, profile }) => {
-  if (!fire.coastReached) return null;
+  if (!fire.coastFireApplicable || !fire.coastReached) return null;
   return {
     id: "coast_fire_reached",
     category: "fire",
     severity: "positive",
     title: "You have crossed Coast FIRE",
-    body: `Your existing investments of ${fmt(fire.investableNow)} are projected to reach your FIRE number of ${fmt(fire.fireNumber)} by age ${profile.retirementTargetAge} without further contributions.`,
+    body: `Your FIRE pot of ${fmt(fire.firePotNow)} is projected to reach your effective FIRE number of ${fmt(fire.effectiveFireNumber)} by age ${profile.retirementTargetAge} without further contributions.`,
     impactScore: 75,
     actionRoute: "/fire",
   };
 };
 
 const fireProgressRule: Rule = ({ fire }) => {
-  if (fire.coastReached) return null;
+  if (fire.coastFireApplicable && fire.coastReached) return null;
+  if (fire.fireProgressPct >= 100) return null;
+  const gap = Math.max(0, fire.effectiveFireNumber - fire.firePotNow);
   return {
     id: "fire_distance",
     category: "fire",
     severity: "info",
     title: "Distance to FIRE",
-    body: `You are ${fmt(fire.fireNumber - fire.investableNow)} away from your FIRE number${fire.fireAge ? ` (projected at age ${fire.fireAge})` : ""}.`,
+    body: `You are ${fmt(gap)} away from your effective FIRE number${fire.fireAge ? ` (projected at age ${fire.fireAge})` : ""}.`,
     impactScore: 55,
     actionRoute: "/fire",
   };

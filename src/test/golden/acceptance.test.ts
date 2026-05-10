@@ -44,6 +44,7 @@ describe("Phase 1 acceptance criteria (PRD §16.1)", () => {
     const proj = runProjection(p);
     const fire = computeFire(p, proj);
     expect(fire.fireNumber).toBeCloseTo(1_142_857.14, 0);
+    expect(fire.effectiveFireNumber).toBeCloseTo(fire.fireNumber, 0);
   });
 
   it("Coast FIRE crossover date computed", () => {

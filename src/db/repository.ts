@@ -1,4 +1,5 @@
 import type { Scenario, UserProfile } from "@/engine/types";
+import { mergeFireCalculationPrefs } from "@/engine/fire/firePrefs";
 import type { ProfileRowV2 } from "./dexie";
 import { db } from "./dexie";
 
@@ -7,6 +8,7 @@ function normalizeUserProfile(data: UserProfile): UserProfile {
     ...data,
     hasLisa: data.hasLisa ?? true,
     hasGia: data.hasGia ?? true,
+    fireCalculationPrefs: mergeFireCalculationPrefs(data.fireCalculationPrefs),
   };
 }
 

@@ -22,7 +22,7 @@ A visually rich, **local-first** UK retirement trajectory and wealth projection 
 
 ## Stack
 
-React 18 · TypeScript · Vite · Tailwind · shadcn-style components · Recharts · Zustand · Dexie (IndexedDB) · Vitest · vite-plugin-pwa · Cloudflare Pages
+React 18 · TypeScript · Vite · Tailwind · shadcn-style components · Recharts · Zustand · Dexie (IndexedDB) · Vitest · vite-plugin-pwa · SwiftUI (iOS) · Cloudflare Pages
 
 ## Run
 
@@ -42,6 +42,18 @@ npx wrangler pages deploy dist
 ```
 
 `wrangler.jsonc` is included with the project name `ontrack` and `pages_build_output_dir = ./dist`.
+
+## iOS (SwiftUI)
+
+The native app lives under `ios/App/`. Open **`ios/App/App.xcodeproj`** (not CocoaPods). Minimum iOS **17** (SwiftData). The projection engine is still TypeScript on web; iOS will consume the same JSON goldens under `fixtures/engine-goldens/` (see `docs/ENGINE_DUAL_PLATFORM.md`).
+
+```bash
+npm run test:ios-engine   # Swift package decodes golden fixtures (CI parity hook)
+```
+
+In Xcode: select your team for signing, choose a simulator or device, then **Run**.
+
+For App Store Connect steps (signing, privacy, TestFlight), see [docs/ios-release.md](docs/ios-release.md).
 
 ## Project structure
 

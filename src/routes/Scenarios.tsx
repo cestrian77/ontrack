@@ -313,9 +313,9 @@ export default function Scenarios() {
                   ageMode
                 />
                 <DeltaRow
-                  label="FIRE number"
-                  base={chartBaseFire.fireNumber}
-                  values={compareRows.map((r) => r.fire.fireNumber)}
+                  label="FIRE number (effective)"
+                  base={chartBaseFire.effectiveFireNumber}
+                  values={compareRows.map((r) => r.fire.effectiveFireNumber)}
                 />
                 <DeltaRow
                   label="Pension at retirement"

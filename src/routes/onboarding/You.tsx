@@ -36,6 +36,7 @@ export default function OnboardingYou() {
         <Field label="Date of birth" hint="Used to derive your current age.">
           <Input
             type="date"
+            autoComplete="bday"
             value={profile.dateOfBirth}
             max={new Date().toISOString().slice(0, 10)}
             onChange={(e) => update({ dateOfBirth: e.target.value })}

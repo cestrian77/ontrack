@@ -13,6 +13,7 @@ import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
 import { gbp } from "@/lib/utils";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
+import { useIsNarrowScreen } from "@/lib/hooks";
 
 interface Props {
   profile: UserProfile;
@@ -23,6 +24,7 @@ interface Props {
 const COLOURS = ["#1e3a8a", "#0f766e", "#3b82f6", "#d4a017", "#10b981", "#a855f7"];
 
 export function IncomeStack({ profile, projection, taxYearPack }: Props) {
+  const narrow = useIsNarrowScreen();
   const atRet = projection.years.find((y) => y.age === profile.retirementTargetAge);
   if (!atRet) return null;
   const data = [
@@ -35,23 +37,24 @@ export function IncomeStack({ profile, projection, taxYearPack }: Props) {
   ];
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <BarChart layout="vertical" data={data} margin={{ left: 24, right: 16 }}>
+    <ResponsiveContainer width="100%" height={narrow ? 280 : 260}>
+      <BarChart layout="vertical" data={data} margin={{ left: narrow ? 8 : 24, right: narrow ? 8 : 16 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
         <XAxis
           type="number"
           tickFormatter={(v) => gbp(Number(v))}
-          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: narrow ? 9 : 11 }}
           stroke="hsl(var(--border))"
         />
         <YAxis
           type="category"
           dataKey="source"
-          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: narrow ? 10 : 11 }}
           stroke="hsl(var(--border))"
-          width={120}
+          width={narrow ? 92 : 120}
         />
         <Tooltip
+          trigger={narrow ? "click" : "hover"}
           wrapperStyle={chartTooltipWrapperStyle}
           contentStyle={chartTooltipContentStyle}
           formatter={(v: number) => gbp(v)}

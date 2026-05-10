@@ -20,6 +20,15 @@ const HORIZON_AGE = 100;
 
 export interface RunProjectionOptions {
   taxYearPack?: TaxYearPack;
+  /** ISO calendar date (yyyy-mm-dd). Fixes "today" for deterministic tests and cross-platform goldens. */
+  asOfDate?: string;
+}
+
+function resolveAsOf(options?: RunProjectionOptions): Date {
+  if (options?.asOfDate) {
+    return new Date(`${options.asOfDate}T12:00:00Z`);
+  }
+  return new Date();
 }
 
 function rampedMonthlyExtra(adj: MonthlyBoostParams | undefined, yearIndex: number): number {
@@ -47,8 +56,9 @@ export function runProjection(
   options?: RunProjectionOptions,
 ): Projection {
   const taxYearPack = options?.taxYearPack ?? currentTaxYearPack();
-  const currentAge = ageFromDob(profile.dateOfBirth);
-  const startYear = new Date().getFullYear();
+  const asOf = resolveAsOf(options);
+  const currentAge = ageFromDob(profile.dateOfBirth, asOf);
+  const startYear = asOf.getUTCFullYear();
   const retirementAge = profile.retirementTargetAge;
   const nmpa = profile.pensionAccessAge;
   const spa = profile.statePensionClaimAge;
@@ -74,6 +84,7 @@ export function runProjection(
   const rIsa = realRate(profile.isaGrowth, profile.cpi);
   const rGia = realRate(profile.giaGrowth, profile.cpi);
   const rCash = realRate(profile.cashRate, profile.cpi);
+  const rCashIsa = realRate(profile.cashIsaRate, profile.cpi);
   // Property appreciation is applied as stated (real annual growth in today's £) so headline % matches the journey chart in real mode.
   const rPrimary = profile.primaryAppreciation;
 
@@ -108,7 +119,7 @@ export function runProjection(
     if (i > 0) {
       pension = pension * (1 + rPension) + annualPensionContrib;
       ssIsa = ssIsa * (1 + rIsa) + annualSsIsaContrib;
-      cashIsa = compoundAnnual(cashIsa, rCash);
+      cashIsa = compoundAnnual(cashIsa, rCashIsa);
       lisa = lisaAnnualGrowth(lisa, annualLisaContribMonthly, rIsa, age);
       gia = giaAnnualGrowth(gia, giaMonthlyEff, rGia);
       cash = compoundAnnual(cash, rCash);

@@ -1,4 +1,5 @@
 import type { UserProfile } from "@/engine/types";
+import { DEFAULT_FIRE_CALCULATION_PREFS } from "@/engine/fire/firePrefs";
 import {
   DEFAULT_CPI,
   DEFAULT_CASH_RATE,
@@ -105,6 +106,8 @@ export function makeDefaultProfile(): UserProfile {
     leanFirePct: DEFAULT_LEAN_PCT,
     fatFirePct: DEFAULT_FAT_PCT,
     baristaPartTimeIncome: 12_000,
+
+    fireCalculationPrefs: { ...DEFAULT_FIRE_CALCULATION_PREFS },
 
     updatedAt: new Date().toISOString(),
   };

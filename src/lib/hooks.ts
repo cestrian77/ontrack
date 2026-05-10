@@ -114,3 +114,20 @@ export function useInsights() {
   );
   return { all, projection, fire, taxYearPack, analysisProfile };
 }
+
+const NARROW_CHART_MQ = "(max-width: 767px)";
+
+/** Small screens / phones: chart density, tap tooltips, taller plot areas. */
+export function useIsNarrowScreen(): boolean {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(NARROW_CHART_MQ).matches : false,
+  );
+  useEffect(() => {
+    const m = window.matchMedia(NARROW_CHART_MQ);
+    const onChange = () => setNarrow(m.matches);
+    onChange();
+    m.addEventListener("change", onChange);
+    return () => m.removeEventListener("change", onChange);
+  }, []);
+  return narrow;
+}

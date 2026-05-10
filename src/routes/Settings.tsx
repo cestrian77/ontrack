@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Download, Upload, Trash2, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,11 @@ import {
 } from "@/components/ui/select";
 import { exportAll, importAll } from "@/db/repository";
 import { Link } from "react-router-dom";
+import { runProjection } from "@/engine/project/runProjection";
+import { computeFire } from "@/engine/fire/fire";
+import { mergeFireCalculationPrefs } from "@/engine/fire/firePrefs";
+import { baseTaxYearPack } from "@/lib/taxYearContext";
+import { FireCalculationSection } from "@/components/fire/FireCalculationSection";
 
 export default function Settings() {
   const profile = useProfileStore((s) => s.profile);
@@ -31,6 +36,34 @@ export default function Settings() {
   const update = useProfileStore((s) => s.update);
   const reset = useProfileStore((s) => s.reset);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const basePack = useMemo(
+    () => baseTaxYearPack(analysisTaxYearLabel),
+    [analysisTaxYearLabel],
+  );
+  const projectionPreview = useMemo(
+    () => runProjection(profile, { taxYearPack: basePack }),
+    [profile, basePack],
+  );
+  const firePreview = useMemo(
+    () => computeFire(profile, projectionPreview, basePack),
+    [profile, projectionPreview, basePack],
+  );
+
+  const partnerProjectionPreview = useMemo(
+    () =>
+      partnerProfile
+        ? runProjection(partnerProfile, { taxYearPack: basePack })
+        : null,
+    [partnerProfile, basePack],
+  );
+  const partnerFirePreview = useMemo(
+    () =>
+      partnerProfile && partnerProjectionPreview
+        ? computeFire(partnerProfile, partnerProjectionPreview, basePack)
+        : null,
+    [partnerProfile, partnerProjectionPreview, basePack],
+  );
 
   const onExport = async () => {
     const json = await exportAll();
@@ -215,10 +248,21 @@ export default function Settings() {
               max={10}
             />
           </Field>
-          <Field label="Cash interest rate">
+          <Field label="Cash interest rate" hint="Non-ISA cash savings only.">
             <PercentInput
               value={profile.cashRate}
               onChange={(n) => update({ cashRate: n })}
+              min={0}
+              max={10}
+            />
+          </Field>
+          <Field
+            label="Cash ISA interest (nominal)"
+            hint="Cash ISA balance compounds at this rate (same field as ISA onboarding). S&S ISA uses ISA growth below."
+          >
+            <PercentInput
+              value={profile.cashIsaRate}
+              onChange={(n) => update({ cashIsaRate: n })}
               min={0}
               max={10}
             />
@@ -231,7 +275,10 @@ export default function Settings() {
               max={15}
             />
           </Field>
-          <Field label="ISA growth (nominal)">
+          <Field
+            label="ISA growth (nominal)"
+            hint="Stocks & shares ISA and LISA. Cash ISA uses Cash ISA interest above."
+          >
             <PercentInput
               value={profile.isaGrowth}
               onChange={(n) => update({ isaGrowth: n })}
@@ -328,9 +375,51 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
+          <CardTitle>FIRE calculation</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Optional: treat State Pension, DB income, and BTL profit as covering part of your retirement income target, and pick which wrappers count as your FIRE pot. When you have a partner, a second card below edits their solo-analysis copy.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <FireCalculationSection
+            prefs={mergeFireCalculationPrefs(profile.fireCalculationPrefs)}
+            onPatch={(next) => update({ fireCalculationPrefs: next })}
+            passiveIncomeAtReference={firePreview.passiveIncomeAtReference}
+            referenceAge={firePreview.referenceAgeForPassive}
+            targetIncome={profile.targetRetirementIncome}
+          />
+        </CardContent>
+      </Card>
+
+      {partnerProfile && partnerFirePreview ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Partner — FIRE calculation</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Used when you view or analyse the partner alone. Couple / family household FIRE still uses the primary holder’s settings above.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <FireCalculationSection
+              prefs={mergeFireCalculationPrefs(partnerProfile.fireCalculationPrefs)}
+              onPatch={(next) => updatePartner({ fireCalculationPrefs: next })}
+              passiveIncomeAtReference={partnerFirePreview.passiveIncomeAtReference}
+              referenceAge={partnerFirePreview.referenceAgeForPassive}
+              targetIncome={partnerProfile.targetRetirementIncome}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Card>
+        <CardHeader>
           <CardTitle>Edit your inputs</CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="text-xs text-muted-foreground mb-3">
+            Opens the same steps as onboarding; your data stays saved. Does not reset onboarding.
+          </p>
+          <div className="text-xs font-medium text-foreground mb-2">Primary</div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
               <Link to="/onboard/you">You</Link>
@@ -348,6 +437,22 @@ export default function Settings() {
               <Link to="/onboard/btl">BTL</Link>
             </Button>
           </div>
+          {partnerProfile ? (
+            <>
+              <div className="text-xs font-medium text-foreground mt-4 mb-2">Partner</div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" asChild>
+                  <Link to="/onboard/partner-you">Partner — you</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/onboard/partner-pensions">Partner — pensions</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/onboard/partner-isa">Partner — ISA</Link>
+                </Button>
+              </div>
+            </>
+          ) : null}
         </CardContent>
       </Card>
 

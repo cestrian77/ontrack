@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ontrack.local/schema/engine-golden-v1.json",
+  "title": "OnTrack engine golden fixture v1",
+  "type": "object",
+  "required": ["engineGoldenVersion", "id", "asOfDate", "taxYearLabel", "profile", "expected"],
+  "properties": {
+    "engineGoldenVersion": { "const": 1 },
+    "id": { "type": "string" },
+    "description": { "type": "string" },
+    "asOfDate": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "Frozen valuation date passed to runProjection({ asOfDate })"
+    },
+    "taxYearLabel": {
+      "type": "string",
+      "description": "UK label e.g. 2026/27; must match taxYearPackByLabel"
+    },
+    "profile": { "type": "object", "description": "Full UserProfile JSON" },
+    "expected": {
+      "type": "object",
+      "required": ["fire", "projection"],
+      "properties": {
+        "fire": {
+          "type": "object",
+          "required": [
+            "fireNumber",
+            "leanFireNumber",
+            "fatFireNumber",
+            "coastFireNumber",
+            "baristaFireNumber",
+            "investableNow",
+            "fireProgressPct",
+            "coastFireProgressPct",
+            "yearsToFire",
+            "fireAge",
+            "coastReached",
+            "savingsRate"
+          ]
+        },
+        "projection": {
+          "type": "object",
+          "required": ["meta", "yearSnapshots"],
+          "properties": {
+            "meta": {
+              "type": "object",
+              "required": ["currentAge", "retirementAge", "nmpa", "spa", "horizon"]
+            },
+            "yearSnapshots": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["index", "age", "totalNetWorth", "investableNetWorth"]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

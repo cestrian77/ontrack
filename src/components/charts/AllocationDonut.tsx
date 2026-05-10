@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { Projection, UserProfile } from "@/engine/types";
-import { gbp, pct } from "@/lib/utils";
+import { cn, gbp, pct } from "@/lib/utils";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
+import { useIsNarrowScreen } from "@/lib/hooks";
 
 interface Props {
   profile: UserProfile;
@@ -20,6 +21,7 @@ const COLOURS: Record<string, string> = {
 };
 
 export function AllocationDonut({ profile, projection }: Props) {
+  const narrow = useIsNarrowScreen();
   const [view, setView] = useState<"now" | "retirement">("now");
   const target = view === "now"
     ? projection.years[0]
@@ -41,31 +43,38 @@ export function AllocationDonut({ profile, projection }: Props) {
     <div className="flex flex-col">
       <div className="flex items-center justify-end gap-2 mb-1">
         <button
-          className={`text-xs px-2 py-1 rounded ${
-            view === "now" ? "bg-secondary" : "text-muted-foreground"
-          }`}
+          type="button"
+          className={cn(
+            "text-xs rounded-md min-h-10 min-w-[5.5rem] px-3 py-2 touch-manipulation",
+            view === "now" ? "bg-secondary" : "text-muted-foreground",
+          )}
           onClick={() => setView("now")}
         >
           Today
         </button>
         <button
-          className={`text-xs px-2 py-1 rounded ${
-            view === "retirement" ? "bg-secondary" : "text-muted-foreground"
-          }`}
+          type="button"
+          className={cn(
+            "text-xs rounded-md min-h-10 min-w-[5.5rem] px-3 py-2 touch-manipulation",
+            view === "retirement" ? "bg-secondary" : "text-muted-foreground",
+          )}
           onClick={() => setView("retirement")}
         >
           At retirement
         </button>
       </div>
-      <ResponsiveContainer width="100%" height={220}>
+      {narrow ? (
+        <p className="text-xs text-muted-foreground mb-2 md:hidden">Tap a segment for amounts.</p>
+      ) : null}
+      <ResponsiveContainer width="100%" height={narrow ? 240 : 220}>
         <PieChart>
           <Pie
             data={data}
             dataKey="value"
             cx="50%"
             cy="50%"
-            innerRadius={55}
-            outerRadius={88}
+            innerRadius={narrow ? 48 : 55}
+            outerRadius={narrow ? 82 : 88}
             paddingAngle={1}
             isAnimationActive={false}
           >
@@ -74,6 +83,7 @@ export function AllocationDonut({ profile, projection }: Props) {
             ))}
           </Pie>
           <Tooltip
+            trigger={narrow ? "click" : "hover"}
             wrapperStyle={chartTooltipWrapperStyle}
             contentStyle={chartTooltipContentStyle}
             formatter={(v: number, name: string) => [

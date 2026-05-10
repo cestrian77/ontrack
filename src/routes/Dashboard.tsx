@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
+import { Camera } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useScenarioStore } from "@/store/useScenarioStore";
 import { useUiStore } from "@/store/useUiStore";
 import { useDismissedInsights, useProjection } from "@/lib/hooks";
@@ -23,6 +25,10 @@ import { gbp } from "@/lib/utils";
 import { InsightRepo } from "@/db/repository";
 import { HOUSEHOLD_VIEW_FOOTNOTE } from "@/engine/household/semantics";
 import { AnalysisViewSwitch } from "@/components/AnalysisViewSwitch";
+import {
+  captureDashboardPng,
+  saveDashboardSnapshot,
+} from "@/lib/dashboardSnapshot";
 
 export default function Dashboard() {
   const {
@@ -58,11 +64,43 @@ export default function Dashboard() {
     (y) => y.age === analysisProfile.retirementTargetAge,
   );
 
+  const snapshotRef = useRef<HTMLDivElement>(null);
+  const [snapshotBusy, setSnapshotBusy] = useState(false);
+
+  const onSnapshot = async () => {
+    const el = snapshotRef.current;
+    if (!el) return;
+    setSnapshotBusy(true);
+    try {
+      const dataUrl = await captureDashboardPng(el);
+      await saveDashboardSnapshot(dataUrl);
+    } catch (e) {
+      console.error(e);
+      alert("Could not create snapshot. Try scrolling charts into view and try again.");
+    } finally {
+      setSnapshotBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="lg:hidden">
-        <AnalysisViewSwitch />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="lg:hidden flex-1 min-w-0">
+          <AnalysisViewSwitch />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="min-h-11 touch-manipulation shrink-0 ml-auto lg:ml-0"
+          onClick={() => void onSnapshot()}
+          disabled={snapshotBusy}
+        >
+          <Camera className="h-4 w-4" aria-hidden />
+          {snapshotBusy ? "Saving…" : "Save snapshot"}
+        </Button>
       </div>
+      <div className="space-y-6" ref={snapshotRef}>
       {isHouseholdAnalysis && (
         <p className="text-xs text-muted-foreground border border-border rounded-md p-3 bg-muted/30">
           {HOUSEHOLD_VIEW_FOOTNOTE}
@@ -75,7 +113,11 @@ export default function Dashboard() {
           value={gbp(atRet?.totalNetWorth ?? 0)}
           hint={NET_WORTH_TOTAL_TOOLTIP}
         />
-        <Stat label="FIRE number" value={gbp(fire.fireNumber)} hint={FIRE_NUMBER_TOOLTIP} />
+        <Stat
+          label="FIRE number"
+          value={gbp(fire.effectiveFireNumber)}
+          hint={FIRE_NUMBER_TOOLTIP}
+        />
       </div>
 
       <Card>
@@ -138,7 +180,7 @@ export default function Dashboard() {
               <MetricHint text={FIRE_PROGRESS_TOOLTIP} />
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Investable wealth vs FIRE number (excludes property equity).
+              FIRE pot vs effective FIRE number. Classic (pre-offset) figure: {gbp(fire.fireNumber)}.
             </p>
           </CardHeader>
           <CardContent>
@@ -187,6 +229,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <TaxDashboard profile={analysisProfile} taxYearPack={taxYearPack} />
         </div>
+      </div>
       </div>
     </div>
   );

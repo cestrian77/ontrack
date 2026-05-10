@@ -17,6 +17,7 @@ export function FireRing({ fire, size = 200 }: Props) {
   const progress = Math.min(1, fire.fireProgressPct / 100);
   const offset = c * (1 - progress);
   const coast = Math.min(1, fire.coastFireProgressPct / 100);
+  const showCoast = fire.coastFireApplicable;
 
   return (
     <div className="flex flex-col items-center gap-6 w-full">
@@ -66,31 +67,37 @@ export function FireRing({ fire, size = 200 }: Props) {
 
       <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground -mt-1">
         <span className="tabular-nums">
-          {gbp(fire.investableNow)} / {gbp(fire.fireNumber)}
+          {gbp(fire.firePotNow)} / {gbp(fire.effectiveFireNumber)}
         </span>
         <MetricHint text={FIRE_PROGRESS_TOOLTIP} className="text-muted-foreground" />
       </div>
 
-      <div className="w-full max-w-[260px] space-y-2 pt-1 border-t border-border">
-        <div>
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-muted-foreground">Coast FIRE</span>
-            <span
-              className={
-                fire.coastReached ? "text-success" : "text-muted-foreground"
-              }
-            >
-              {fire.coastReached ? "Reached" : pct(coast)}
-            </span>
-          </div>
-          <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-            <div
-              className={`h-full ${fire.coastReached ? "bg-success" : "bg-primary"}`}
-              style={{ width: `${Math.min(100, coast * 100)}%` }}
-            />
+      {showCoast ? (
+        <div className="w-full max-w-[260px] space-y-2 pt-1 border-t border-border">
+          <div>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-muted-foreground">Coast FIRE</span>
+              <span
+                className={
+                  fire.coastReached ? "text-success" : "text-muted-foreground"
+                }
+              >
+                {fire.coastReached ? "Reached" : pct(coast)}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+              <div
+                className={`h-full ${fire.coastReached ? "bg-success" : "bg-primary"}`}
+                style={{ width: `${Math.min(100, coast * 100)}%` }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <p className="w-full max-w-[260px] text-[10px] text-muted-foreground pt-1 border-t border-border">
+          Coast FIRE is hidden when pension is excluded from your FIRE pot.
+        </p>
+      )}
     </div>
   );
 }

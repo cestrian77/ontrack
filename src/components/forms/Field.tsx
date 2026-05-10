@@ -28,7 +28,13 @@ export function Field({ label, hint, example, error, className, children }: Fiel
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                <button
+                  type="button"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground touch-manipulation -ml-1"
+                  aria-label="Field hint"
+                >
+                  <Info className="h-3.5 w-3.5" aria-hidden />
+                </button>
               </TooltipTrigger>
               <TooltipContent>{hint}</TooltipContent>
             </Tooltip>
@@ -77,6 +83,7 @@ export function NumberInput({
       <Input
         type="number"
         inputMode="decimal"
+        enterKeyHint="done"
         value={displayValue}
         onChange={(e) => onChange(Number(e.target.value))}
         min={min}

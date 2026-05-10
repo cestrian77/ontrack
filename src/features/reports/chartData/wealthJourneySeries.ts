@@ -68,7 +68,7 @@ export function buildWealthJourneySeriesData({
 
   const fireNum =
     fireNumberForLine ??
-    computeFire(profile, projection, baseTaxYearPack).fireNumber;
+    computeFire(profile, projection, baseTaxYearPack).effectiveFireNumber;
   const fireY =
     mode === "nominal"
       ? nominalise(

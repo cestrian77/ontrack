@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Financier | Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#006b5f",
+                        "on-primary-container": "#00352e",
+                        "on-tertiary-fixed-variant": "#3a4a49",
+                        "surface-variant": "#e0e3e2",
+                        "surface-container-high": "#e6e9e8",
+                        "tertiary-container": "#889998",
+                        "on-surface": "#181c1c",
+                        "inverse-on-surface": "#eef1f0",
+                        "surface-dim": "#d7dbda",
+                        "on-primary-fixed-variant": "#005047",
+                        "tertiary-fixed-dim": "#b8cac9",
+                        "surface-container-low": "#f1f4f3",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#434847",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#5a5f5e",
+                        "secondary-container": "#dce1df",
+                        "tertiary": "#516161",
+                        "surface": "#f7faf9",
+                        "secondary-fixed-dim": "#c3c7c6",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#181c1c",
+                        "on-primary-fixed": "#00201c",
+                        "surface-bright": "#f7faf9",
+                        "tertiary-fixed": "#d4e6e5",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#5f6462",
+                        "primary": "#006b5f",
+                        "outline-variant": "#bbcac5",
+                        "primary-container": "#00a896",
+                        "surface-container": "#ebeeed",
+                        "primary-fixed": "#79f7e3",
+                        "outline": "#6c7a76",
+                        "surface-container-highest": "#e0e3e2",
+                        "inverse-surface": "#2d3131",
+                        "secondary-fixed": "#dfe3e1",
+                        "on-secondary-fixed": "#181d1c",
+                        "inverse-primary": "#59dbc7",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#59dbc7",
+                        "on-tertiary-fixed": "#0e1e1e",
+                        "error": "#ba1a1a",
+                        "background": "#f7faf9",
+                        "on-tertiary-container": "#213131",
+                        "on-surface-variant": "#3c4946",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding-desktop": "40px",
+                        "card-padding": "32px",
+                        "container-padding-mobile": "20px",
+                        "unit": "4px",
+                        "gutter-bento": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-bold": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f7faf9;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- TopAppBar Fragment -->
+<!-- Exclusion Rule applied: Navigation elements suppressed for transactional/onboarding flows -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-sm h-16">
+<div class="flex items-center justify-between px-container-padding-mobile md:px-container-padding-desktop h-full w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-3">
+<span class="font-display-lg text-headline-md font-bold text-primary">Financier</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-bold text-label-bold text-on-surface-variant">Setup Wizard</span>
+<span class="material-symbols-outlined text-primary" data-icon="settings_suggest">settings_suggest</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop flex flex-col items-center">
+<div class="w-full max-w-3xl flex flex-col gap-10">
+<!-- Progress Section -->
+<div class="w-full space-y-4">
+<div class="flex justify-between items-end">
+<span class="font-label-bold text-label-bold text-primary tracking-widest uppercase">Step 1 of 3</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Personal Profile</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-1/3 transition-all duration-500 rounded-full"></div>
+</div>
+</div>
+<!-- Hero/Intro Section -->
+<div class="space-y-4 text-center md:text-left">
+<h1 class="font-display-lg text-display-lg text-on-surface">Define your horizon.</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">Setting your age and target retirement allows our engine to calculate the precise velocity your wealth needs to reach your desired destination.</p>
+</div>
+<!-- Input Bento Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter-bento">
+<!-- Current Age Card -->
+<div class="bg-surface-container-lowest rounded-[24px] p-card-padding shadow-[0px_10px_30px_rgba(26,31,30,0.04)] hover:scale-[1.01] transition-transform">
+<label class="block font-label-bold text-label-bold text-on-surface-variant mb-6" for="current_age">Current Age</label>
+<div class="relative group">
+<input class="w-full bg-surface-container-low border-none rounded-xl px-6 py-5 text-headline-md font-headline-md text-primary focus:ring-2 focus:ring-primary-container transition-all" id="current_age" placeholder="28" type="number"/>
+<span class="absolute right-6 top-1/2 -translate-y-1/2 text-on-surface-variant font-label-bold">Years</span>
+</div>
+</div>
+<!-- Target Age Card -->
+<div class="bg-surface-container-lowest rounded-[24px] p-card-padding shadow-[0px_10px_30px_rgba(26,31,30,0.04)] hover:scale-[1.01] transition-transform">
+<label class="block font-label-bold text-label-bold text-on-surface-variant mb-6" for="target_age">Target Retirement Age</label>
+<div class="relative group">
+<input class="w-full bg-surface-container-low border-none rounded-xl px-6 py-5 text-headline-md font-headline-md text-primary focus:ring-2 focus:ring-primary-container transition-all" id="target_age" placeholder="65" type="number"/>
+<span class="absolute right-6 top-1/2 -translate-y-1/2 text-on-surface-variant font-label-bold">Years</span>
+</div>
+</div>
+</div>
+<!-- CTA Section -->
+<div class="flex flex-col items-center gap-6 mt-4">
+<button class="w-full md:w-auto md:px-12 py-4 bg-primary-container text-on-primary-container font-headline-md rounded-xl shadow-lg active:scale-95 transition-transform">
+                    Continue
+                </button>
+<button class="text-on-tertiary-fixed-variant font-label-bold hover:text-primary transition-colors tracking-wide">
+                    Save and finish later
+                </button>
+</div>
+<!-- Visual Precision Anchor -->
+<div class="mt-12 rounded-[24px] overflow-hidden shadow-sm h-64 w-full relative">
+<img alt="Precision planning visual" class="w-full h-full object-cover grayscale-[20%] contrast-[1.05]" data-alt="A meticulously clean, high-end architectural workspace featuring professional blueprints and precision drawing instruments laid out on a minimalist white desk. The scene is illuminated by soft, natural morning light filtering through a window, creating a serene and focused atmosphere. The color palette consists of crisp whites, soft greys, and subtle teal accents, embodying an aesthetic of energetic professionalism and future-oriented planning." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHdznao0P3jVDo461jX729ShQA89t2GfTwVeJL9Mtv6v0H3nIZb4s5l4EZEpjdKTmXGVkxBfBdAwU229LkumiPOnse5IAKCxOt7uAGpMbmrGV3hiBL1YcpHXY5E4Veedzna-YhjNEmuvUm0tC1viUNlw_at49ZDEaxr4PB5mSnXlCaHa9YG1bWug9-vyv8b8QiXMwvQ-SQVjEwBNYlKAhZDE63eeysZOyZ31cTNWkYnmjdAy-LNJVMJeDoyBAKRPv2mI_7RR5sHnw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface/40 to-transparent"></div>
+<div class="absolute bottom-6 left-8 flex items-center gap-3">
+<div class="w-10 h-10 glass-panel rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="architecture">architecture</span>
+</div>
+<span class="text-label-bold text-white drop-shadow-md">Precision Driven Data</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Space -->
+<footer class="py-8 text-center px-container-padding-mobile">
+<p class="font-label-sm text-label-sm text-outline">© 2024 Financier OnTrack Systems. Secure and encrypted.</p>
+</footer>
+</body></html>

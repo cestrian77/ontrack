@@ -27,7 +27,6 @@ import { cn, gbp, pct } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FIRE_PROGRESS_TOOLTIP } from "@/lib/fireMetricsExplain";
-import { BrandLogo } from "@/components/BrandLogo";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", Icon: Home },
@@ -93,10 +92,8 @@ export function AppLayout() {
     <div className="min-h-full bg-background [--planner-header-height:3.5rem] [--mobile-tab-bar-height:4.25rem]">
       <header className="sticky top-[var(--site-header-height)] z-30 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container flex h-14 items-center justify-between gap-4 px-4">
-          <div className="flex items-center gap-3">
-            <BrandLogo />
-            <span className="font-semibold tracking-tight">OnTrack</span>
-            <span className="hidden sm:inline text-xs text-muted-foreground">
+          <div className="min-w-0 flex items-center gap-3">
+            <span className="truncate text-xs text-muted-foreground sm:text-sm">
               UK Retirement Planner
             </span>
           </div>
@@ -126,8 +123,12 @@ export function AppLayout() {
                 </TooltipContent>
               </Tooltip>
               <span className="h-4 w-px bg-border" />
-              <span className="text-muted-foreground">Investable</span>
-              <span className="font-medium">{gbp(fire.investableNow)}</span>
+              <span className="text-muted-foreground">
+                {fire.fireCalculationUsesPotFilters ? "FIRE pot" : "Investable"}
+              </span>
+              <span className="font-medium">
+                {gbp(fire.fireCalculationUsesPotFilters ? fire.firePotNow : fire.investableNow)}
+              </span>
               <span className="h-4 w-px bg-border" />
               <span className="text-muted-foreground">Tax yr</span>
               <span className="font-medium tabular-nums">{taxYearPack.label}</span>

@@ -16,6 +16,7 @@ import { gbp } from "@/lib/utils";
 import { baseTaxYearPack } from "@/lib/taxYearContext";
 import { PROJECTION_ASSET_LAYERS } from "@/lib/projection-assets";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
+import { useIsNarrowScreen } from "@/lib/hooks";
 import { useUiStore } from "@/store/useUiStore";
 import {
   buildWealthJourneySeriesData,
@@ -37,6 +38,8 @@ export function WealthJourney({
   height = 360,
   resolveScenarioProfile,
 }: Props) {
+  const narrow = useIsNarrowScreen();
+  const effHeight = narrow ? Math.max(height, 320) : height;
   const mode = useUiStore((s) => s.inflationToggle);
   const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const basePack = useMemo(
@@ -58,27 +61,34 @@ export function WealthJourney({
   );
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <ComposedChart data={data} margin={{ top: 28, right: 16, left: 0, bottom: 0 }}>
+    <>
+      {narrow ? (
+        <p className="text-xs text-muted-foreground mb-2 md:hidden">Tap the chart for details.</p>
+      ) : null}
+      <ResponsiveContainer width="100%" height={effHeight}>
+      <ComposedChart data={data} margin={{ top: 28, right: narrow ? 8 : 16, left: 0, bottom: narrow ? 8 : 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
         <XAxis
           dataKey="age"
-          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: narrow ? 10 : 11 }}
           stroke="hsl(var(--border))"
+          interval="preserveStartEnd"
+          minTickGap={narrow ? 24 : 8}
         />
         <YAxis
           tickFormatter={(v) => gbp(Number(v))}
-          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: narrow ? 10 : 11 }}
           stroke="hsl(var(--border))"
-          width={70}
+          width={narrow ? 56 : 70}
         />
         <Tooltip
+          trigger={narrow ? "click" : "hover"}
           wrapperStyle={chartTooltipWrapperStyle}
           contentStyle={chartTooltipContentStyle}
           formatter={(value: number, name: string) => [gbp(value), name]}
           labelFormatter={(label) => `Age ${label}`}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: narrow ? 10 : 11 }} />
         {PROJECTION_ASSET_LAYERS.map((l) => (
           <Area
             key={l.key}
@@ -155,5 +165,6 @@ export function WealthJourney({
         />
       </ComposedChart>
     </ResponsiveContainer>
+    </>
   );
 }

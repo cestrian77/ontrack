@@ -10,9 +10,21 @@ export function FireTimeline({ profile, fire }: Props) {
   const today = ageFromDob(profile.dateOfBirth);
   const horizon = profile.retirementTargetAge;
   const range = Math.max(1, horizon - today);
+  const coastSub = !fire.coastFireApplicable
+    ? "N/A"
+    : fire.coastReached
+      ? "Reached"
+      : "estimate";
+  const coastAge =
+    !fire.coastFireApplicable
+      ? today
+      : fire.coastReached
+        ? today
+        : Math.min(horizon, today + Math.round(range * 0.5));
+
   const points = [
     { label: "Today", age: today, sub: "now" },
-    { label: "Coast FIRE", age: fire.coastReached ? today : Math.min(horizon, today + Math.round(range * 0.5)), sub: fire.coastReached ? "Reached" : "estimate" },
+    { label: "Coast FIRE", age: coastAge, sub: coastSub },
     { label: "FIRE", age: fire.fireAge ?? horizon, sub: fire.fireAge ? `age ${fire.fireAge}` : "—" },
     { label: "Retirement target", age: horizon, sub: `age ${horizon}` },
   ];

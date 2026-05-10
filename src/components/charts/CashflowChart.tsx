@@ -14,6 +14,7 @@ import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
 import { gbp } from "@/lib/utils";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
+import { useIsNarrowScreen } from "@/lib/hooks";
 import { useUiStore } from "@/store/useUiStore";
 import { buildCashflowSeriesData } from "@/features/reports/chartData/cashflowSeries";
 
@@ -29,6 +30,8 @@ interface Props {
  * in retirement, state + DB + drawdown + BTL net. Respects Real/Nominal toggle.
  */
 export function CashflowChart({ profile, projection, taxYearPack, height = 280 }: Props) {
+  const narrow = useIsNarrowScreen();
+  const effHeight = narrow ? Math.max(height, 260) : height;
   const mode = useUiStore((s) => s.inflationToggle);
 
   const data = useMemo(
@@ -37,21 +40,28 @@ export function CashflowChart({ profile, projection, taxYearPack, height = 280 }
   );
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <ComposedChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+    <>
+      {narrow ? (
+        <p className="text-xs text-muted-foreground mb-2 md:hidden">Tap the chart for details.</p>
+      ) : null}
+      <ResponsiveContainer width="100%" height={effHeight}>
+      <ComposedChart data={data} margin={{ top: 8, right: narrow ? 8 : 16, left: 0, bottom: narrow ? 8 : 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
         <XAxis
           dataKey="age"
-          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: narrow ? 10 : 11 }}
           stroke="hsl(var(--border))"
+          interval="preserveStartEnd"
+          minTickGap={narrow ? 24 : 8}
         />
         <YAxis
           tickFormatter={(v) => gbp(Number(v))}
-          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: narrow ? 10 : 11 }}
           stroke="hsl(var(--border))"
-          width={70}
+          width={narrow ? 56 : 70}
         />
         <Tooltip
+          trigger={narrow ? "click" : "hover"}
           wrapperStyle={chartTooltipWrapperStyle}
           contentStyle={chartTooltipContentStyle}
           formatter={(value, name) => {
@@ -61,7 +71,7 @@ export function CashflowChart({ profile, projection, taxYearPack, height = 280 }
           }}
           labelFormatter={(label) => `Age ${label}`}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: narrow ? 10 : 11 }} />
         <Line
           type="monotone"
           dataKey="cashflow"
@@ -96,5 +106,6 @@ export function CashflowChart({ profile, projection, taxYearPack, height = 280 }
         />
       </ComposedChart>
     </ResponsiveContainer>
+    </>
   );
 }

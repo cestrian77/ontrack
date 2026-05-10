@@ -193,9 +193,13 @@ export default function OnboardingReview() {
             <div className="text-sm">
               <div className="font-semibold">First projection ready</div>
               <p className="text-muted-foreground">
-                Your FIRE number is <span className="font-medium text-foreground">{gbp(fire.fireNumber)}</span>
+                Your effective FIRE number is{" "}
+                <span className="font-medium text-foreground">{gbp(fire.effectiveFireNumber)}</span>
+                {fire.effectiveFireNumber !== fire.fireNumber ? (
+                  <> (classic {gbp(fire.fireNumber)})</>
+                ) : null}
                 {fire.fireAge ? <> · projected FIRE at age <span className="font-medium text-foreground">{fire.fireAge}</span></> : null}
-                . You can refine assumptions any time in Settings.
+                . Adjust income offsets and pot buckets under Settings → FIRE calculation.
                 {partnerFlow ? (
                   <>
                     {" "}
