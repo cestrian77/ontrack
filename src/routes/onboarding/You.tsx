@@ -1,4 +1,5 @@
 import { useProfileStore } from "@/store/useProfileStore";
+import { makePartnerProfileDefaults } from "@/engine/constants/defaults";
 import { Field, NumberInput } from "@/components/forms/Field";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,7 +15,10 @@ import { ageFromDob } from "@/engine/project/runProjection";
 import { StepShell } from "./StepShell";
 
 export default function OnboardingYou() {
-  const { profile, update } = useProfileStore();
+  const profile = useProfileStore((s) => s.profile);
+  const partnerProfile = useProfileStore((s) => s.partnerProfile);
+  const update = useProfileStore((s) => s.update);
+  const setPartnerProfile = useProfileStore((s) => s.setPartnerProfile);
   const age = ageFromDob(profile.dateOfBirth);
   const valid =
     !!profile.dateOfBirth &&
@@ -78,17 +82,34 @@ export default function OnboardingYou() {
             </SelectContent>
           </Select>
         </Field>
-        <div className="sm:col-span-2 flex items-center justify-between rounded-md border p-3">
-          <div>
-            <Label>Partnered</Label>
-            <p className="text-xs text-muted-foreground">
-              We'll factor this in when couples planning ships in Phase 2.
-            </p>
+        <div className="sm:col-span-2 space-y-2 rounded-md border p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <Label>Partnered</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Turn on to capture your partner&apos;s income, pensions, and investments in onboarding
+                (after Property &amp; BTL — shared home and BTL stay on your steps only). Then use the
+                header switch (Individual / Couple / Family) for merged projections. You can refine their
+                details anytime in{" "}
+                <span className="text-foreground font-medium">Settings → Household &amp; partner</span>.
+              </p>
+            </div>
+            <Switch
+              checked={profile.partnered}
+              onCheckedChange={(v) => {
+                update({ partnered: v });
+                if (v && !partnerProfile) {
+                  setPartnerProfile(makePartnerProfileDefaults());
+                }
+              }}
+            />
           </div>
-          <Switch
-            checked={profile.partnered}
-            onCheckedChange={(v) => update({ partnered: v })}
-          />
+          {profile.partnered && partnerProfile && (
+            <p className="text-xs text-muted-foreground border-t pt-2">
+              Next: continue through your steps — you&apos;ll enter partner income, pensions, and ISAs after
+              the BTL step. Shared primary home and BTL are only on your Property / BTL screens.
+            </p>
+          )}
         </div>
 
         <Field

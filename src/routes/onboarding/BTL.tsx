@@ -40,7 +40,11 @@ function newBTL(): BTLProperty {
 }
 
 export default function OnboardingBTL() {
-  const { profile, update } = useProfileStore();
+  const profile = useProfileStore((s) => s.profile);
+  const partnerProfile = useProfileStore((s) => s.partnerProfile);
+  const update = useProfileStore((s) => s.update);
+  const partnerOnboarding =
+    Boolean(profile.partnered && partnerProfile);
   const list = profile.btlProperties;
 
   const updateBTL = (idx: number, patch: Partial<BTLProperty>) => {
@@ -60,7 +64,9 @@ export default function OnboardingBTL() {
       title="Buy-to-let properties"
       description="Add up to 10 BTLs. We model Section 24 mortgage interest restriction."
       prev="/onboard/property"
-      next="/onboard/review"
+      next={
+        partnerOnboarding ? "/onboard/partner-you" : "/onboard/review"
+      }
     >
       {list.length === 0 && (
         <p className="text-sm text-muted-foreground">

@@ -1,28 +1,27 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useProfileStore } from "@/store/useProfileStore";
 import { cn } from "@/lib/utils";
-
-const STEPS = [
-  { to: "you", label: "You" },
-  { to: "pensions", label: "Pensions" },
-  { to: "isa", label: "ISA & Investments" },
-  { to: "property", label: "Property" },
-  { to: "btl", label: "BTL" },
-  { to: "review", label: "Review" },
-];
+import { buildOnboardingSteps } from "@/routes/onboarding/onboardingSteps";
 
 export function OnboardingLayout() {
   const load = useProfileStore((s) => s.load);
   const loaded = useProfileStore((s) => s.loaded);
+  const profile = useProfileStore((s) => s.profile);
+  const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const loc = useLocation();
+
+  const steps = useMemo(
+    () => buildOnboardingSteps(profile, partnerProfile),
+    [profile, partnerProfile],
+  );
 
   useEffect(() => {
     if (!loaded) void load();
   }, [loaded, load]);
 
-  const current = STEPS.findIndex((s) => loc.pathname.endsWith(s.to));
-  const progress = current < 0 ? 0 : ((current + 1) / STEPS.length) * 100;
+  const current = steps.findIndex((s) => loc.pathname.endsWith(s.to));
+  const progress = current < 0 ? 0 : ((current + 1) / steps.length) * 100;
 
   return (
     <div className="min-h-full bg-background bg-grid">
@@ -32,7 +31,7 @@ export function OnboardingLayout() {
             <div>
               <div className="text-sm font-semibold tracking-tight">OnTrack</div>
               <div className="text-xs text-muted-foreground">
-                Onboarding · Step {current + 1} of {STEPS.length}
+                Onboarding · Step {current + 1} of {steps.length}
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
@@ -46,7 +45,7 @@ export function OnboardingLayout() {
             />
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {STEPS.map((s, i) => (
+            {steps.map((s, i) => (
               <NavLink
                 key={s.to}
                 to={s.to}

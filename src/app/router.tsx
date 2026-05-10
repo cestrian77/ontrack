@@ -7,6 +7,9 @@ import OnboardingPensions from "@/routes/onboarding/Pensions";
 import OnboardingISA from "@/routes/onboarding/ISA";
 import OnboardingProperty from "@/routes/onboarding/Property";
 import OnboardingBTL from "@/routes/onboarding/BTL";
+import OnboardingPartnerYou from "@/routes/onboarding/PartnerYou";
+import OnboardingPartnerPensions from "@/routes/onboarding/PartnerPensions";
+import OnboardingPartnerISA from "@/routes/onboarding/PartnerISA";
 import OnboardingReview from "@/routes/onboarding/Review";
 import Dashboard from "@/routes/Dashboard";
 import Fire from "@/routes/Fire";
@@ -30,6 +33,9 @@ export const router = createBrowserRouter([
       { path: "isa", element: <OnboardingISA /> },
       { path: "property", element: <OnboardingProperty /> },
       { path: "btl", element: <OnboardingBTL /> },
+      { path: "partner-you", element: <OnboardingPartnerYou /> },
+      { path: "partner-pensions", element: <OnboardingPartnerPensions /> },
+      { path: "partner-isa", element: <OnboardingPartnerISA /> },
       { path: "review", element: <OnboardingReview /> },
     ],
   },
