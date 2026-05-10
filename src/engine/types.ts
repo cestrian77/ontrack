@@ -9,6 +9,22 @@ export type Employment = "employed" | "self_employed" | "both";
 export type MortgageType = "repayment" | "interest_only";
 export type Ownership = "sole" | "joint";
 
+/** Which projection row supplies passive income for FIRE income offsets. */
+export type FireReferenceAgeMode = "at_retirement" | "steady_state_after_spa";
+
+export interface FireCalculationPrefs {
+  offsetStatePension: boolean;
+  offsetDbPension: boolean;
+  offsetBtlNet: boolean;
+  referenceAgeMode: FireReferenceAgeMode;
+  includePensionInPot: boolean;
+  includeSsIsaInPot: boolean;
+  includeCashIsaInPot: boolean;
+  includeLisaInPot: boolean;
+  includeGiaInPot: boolean;
+  includeCashInPot: boolean;
+}
+
 export interface BTLProperty {
   id: string;
   label?: string;
@@ -102,6 +118,8 @@ export interface UserProfile {
   leanFirePct: number; // 0.7 default
   fatFirePct: number; // 1.5 default
   baristaPartTimeIncome: number; // £/yr in semi-retirement
+  /** Optional; defaults preserve classic FIRE (full target ÷ SWR vs full investable pot). */
+  fireCalculationPrefs?: FireCalculationPrefs;
 
   /**
    * Scenario-only: extra monthly SIPP / ISA / mortgage overpayment with optional linear ramp.
@@ -218,16 +236,35 @@ export interface Scenario {
 }
 
 export interface FireMetrics {
+  /** Classic: full target income ÷ SWR (and scaled variants); ignores passive income offsets. */
   fireNumber: number;
   leanFireNumber: number;
   fatFireNumber: number;
   coastFireNumber: number;
   baristaFireNumber: number;
   investableNow: number;
+  /** Progress of FIRE pot vs effective FIRE number (see prefs). */
   fireProgressPct: number;
   coastFireProgressPct: number;
   yearsToFire: number | null;
   fireAge: number | null;
   coastReached: boolean;
   savingsRate: number;
+  /** Pot needed from portfolio after optional passive offsets, ÷ SWR. */
+  effectiveFireNumber: number;
+  effectiveLeanFireNumber: number;
+  effectiveFatFireNumber: number;
+  effectiveCoastFireNumber: number;
+  effectiveBaristaFireNumber: number;
+  /** Sum of included buckets (year 0). */
+  firePotNow: number;
+  /** FIRE pot at first year with age ≥ retirement target. */
+  firePotAtRetirement: number;
+  /** Sum of enabled passive components on the reference row. */
+  passiveIncomeAtReference: number;
+  referenceAgeForPassive: number | null;
+  /** Coast FIRE progress only meaningful when pension is in the FIRE pot. */
+  coastFireApplicable: boolean;
+  fireCalculationUsesIncomeOffsets: boolean;
+  fireCalculationUsesPotFilters: boolean;
 }
