@@ -1,7 +1,9 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { SiteShell } from "@/app/SiteShell";
 import { AppLayout } from "@/app/AppLayout";
 import { OnboardingLayout } from "@/app/OnboardingLayout";
 import Welcome from "@/routes/Welcome";
+import Contact from "@/routes/Contact";
 import OnboardingYou from "@/routes/onboarding/You";
 import OnboardingPensions from "@/routes/onboarding/Pensions";
 import OnboardingISA from "@/routes/onboarding/ISA";
@@ -22,36 +24,42 @@ import Help from "@/routes/Help";
 import ReportBuilder from "@/routes/ReportBuilder";
 
 export const router = createBrowserRouter([
-  { path: "/", element: <Welcome /> },
-  {
-    path: "/onboard",
-    element: <OnboardingLayout />,
-    children: [
-      { index: true, element: <Navigate to="you" replace /> },
-      { path: "you", element: <OnboardingYou /> },
-      { path: "pensions", element: <OnboardingPensions /> },
-      { path: "isa", element: <OnboardingISA /> },
-      { path: "property", element: <OnboardingProperty /> },
-      { path: "btl", element: <OnboardingBTL /> },
-      { path: "partner-you", element: <OnboardingPartnerYou /> },
-      { path: "partner-pensions", element: <OnboardingPartnerPensions /> },
-      { path: "partner-isa", element: <OnboardingPartnerISA /> },
-      { path: "review", element: <OnboardingReview /> },
-    ],
-  },
   {
     path: "/",
-    element: <AppLayout />,
+    element: <SiteShell />,
     children: [
-      { path: "dashboard", element: <Dashboard /> },
-      { path: "fire", element: <Fire /> },
-      { path: "scenarios", element: <Scenarios /> },
-      { path: "property", element: <Property /> },
-      { path: "tax", element: <Tax /> },
-      { path: "insights", element: <Insights /> },
-      { path: "help", element: <Help /> },
-      { path: "reports/builder", element: <ReportBuilder /> },
-      { path: "settings", element: <Settings /> },
+      { index: true, element: <Welcome /> },
+      { path: "contact", element: <Contact /> },
+      {
+        path: "onboard",
+        element: <OnboardingLayout />,
+        children: [
+          { index: true, element: <Navigate to="you" replace /> },
+          { path: "you", element: <OnboardingYou /> },
+          { path: "pensions", element: <OnboardingPensions /> },
+          { path: "isa", element: <OnboardingISA /> },
+          { path: "property", element: <OnboardingProperty /> },
+          { path: "btl", element: <OnboardingBTL /> },
+          { path: "partner-you", element: <OnboardingPartnerYou /> },
+          { path: "partner-pensions", element: <OnboardingPartnerPensions /> },
+          { path: "partner-isa", element: <OnboardingPartnerISA /> },
+          { path: "review", element: <OnboardingReview /> },
+        ],
+      },
+      {
+        element: <AppLayout />,
+        children: [
+          { path: "dashboard", element: <Dashboard /> },
+          { path: "fire", element: <Fire /> },
+          { path: "scenarios", element: <Scenarios /> },
+          { path: "property", element: <Property /> },
+          { path: "tax", element: <Tax /> },
+          { path: "insights", element: <Insights /> },
+          { path: "help", element: <Help /> },
+          { path: "reports/builder", element: <ReportBuilder /> },
+          { path: "settings", element: <Settings /> },
+        ],
+      },
     ],
   },
 ]);

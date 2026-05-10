@@ -29,10 +29,10 @@ export function OnboardingLayout() {
         <header className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="text-sm font-semibold tracking-tight">OnTrack</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-sm font-semibold tracking-tight">
                 Onboarding · Step {current + 1} of {steps.length}
               </div>
+              <div className="text-xs text-muted-foreground">Your retirement plan setup</div>
             </div>
             <div className="text-xs text-muted-foreground">
               All data stays on your device.

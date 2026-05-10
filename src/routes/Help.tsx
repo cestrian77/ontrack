@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DISCLAIMER_FULL } from "@/lib/legalCopy";
 
 export default function Help() {
   return (
@@ -61,7 +62,7 @@ export default function Help() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="glossary" className="scroll-mt-[calc(var(--site-header-height)+0.75rem)]">
         <CardHeader>
           <CardTitle>Glossary</CardTitle>
         </CardHeader>
@@ -77,14 +78,12 @@ export default function Help() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="disclaimer" className="scroll-mt-[calc(var(--site-header-height)+0.75rem)]">
         <CardHeader>
           <CardTitle>Disclaimer</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>
-            OnTrack is for education and planning only. It is not financial, tax, or legal advice. Tax law and product rules change; verify anything important with a qualified adviser and official sources.
-          </p>
+          <p>{DISCLAIMER_FULL}</p>
         </CardContent>
       </Card>
     </div>

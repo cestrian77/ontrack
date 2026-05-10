@@ -36,6 +36,12 @@ export default defineConfig({
     __APP_COMMIT__: JSON.stringify(APP_COMMIT),
     __APP_BUILD_DATE__: JSON.stringify(APP_BUILD_DATE),
   },
+  server: {
+    proxy: {
+      // Run `npm run dev:pages` (wrangler pages dev) on 8788 so POST /api/contact works locally.
+      "/api": { target: "http://127.0.0.1:8788", changeOrigin: true },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

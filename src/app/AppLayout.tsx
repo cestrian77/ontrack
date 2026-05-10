@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
-  BarChart3,
   Building2,
   Flame,
   Home,
@@ -14,6 +14,8 @@ import {
   Sun,
   Moon,
   Monitor,
+  Menu,
+  X,
 } from "lucide-react";
 import { useProfileStore } from "@/store/useProfileStore";
 import { useScenarioStore } from "@/store/useScenarioStore";
@@ -25,6 +27,7 @@ import { cn, gbp, pct } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FIRE_PROGRESS_TOOLTIP } from "@/lib/fireMetricsExplain";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", Icon: Home },
@@ -38,9 +41,19 @@ const NAV = [
   { to: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
 
+const NAV_PRIMARY = NAV.slice(0, 5);
+const NAV_MORE = NAV.slice(5);
+
+function navPathActive(pathname: string, to: string) {
+  if (pathname === to) return true;
+  if (to !== "/" && pathname.startsWith(`${to}/`)) return true;
+  return false;
+}
+
 export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
   const onboardingComplete = useProfileStore((s) => s.onboardingComplete);
   const loaded = useProfileStore((s) => s.loaded);
   const load = useProfileStore((s) => s.load);
@@ -61,6 +74,10 @@ export function AppLayout() {
     }
   }, [loaded, onboardingComplete, navigate, location.pathname]);
 
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [location.pathname]);
+
   const { fire, taxYearPack, analysisProfile } = useProjection();
   const age = ageFromDob(analysisProfile.dateOfBirth);
   const yearsToTarget = Math.max(
@@ -68,12 +85,16 @@ export function AppLayout() {
     analysisProfile.retirementTargetAge - age,
   );
 
+  const moreTabActive = NAV_MORE.some(({ to }) =>
+    navPathActive(location.pathname, to),
+  );
+
   return (
-    <div className="min-h-full bg-background">
-      <header className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+    <div className="min-h-full bg-background [--planner-header-height:3.5rem] [--mobile-tab-bar-height:4.25rem]">
+      <header className="sticky top-[var(--site-header-height)] z-30 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-3">
-            <Logo />
+            <BrandLogo />
             <span className="font-semibold tracking-tight">OnTrack</span>
             <span className="hidden sm:inline text-xs text-muted-foreground">
               UK Retirement Planner
@@ -117,7 +138,7 @@ export function AppLayout() {
       </header>
 
       <div className="container flex flex-col md:flex-row gap-6 px-4 py-6">
-        <nav className="hidden md:flex flex-col gap-1 w-44 shrink-0 sticky top-20 self-start">
+        <nav className="hidden md:flex flex-col gap-1 w-44 shrink-0 sticky top-[calc(var(--site-header-height)+var(--planner-header-height))] self-start">
           {NAV.map(({ to, label, Icon }) => (
             <NavLink
               key={to}
@@ -136,38 +157,95 @@ export function AppLayout() {
             </NavLink>
           ))}
         </nav>
-        <main className="flex-1 min-w-0 pb-20 md:pb-0">
+        <main className="flex-1 min-w-0 pb-[calc(var(--site-footer-height)+var(--mobile-tab-bar-height))] md:pb-0">
           <Outlet />
         </main>
       </div>
 
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t bg-card">
-        <div className="flex items-center justify-around">
-          {NAV.slice(0, 5).map(({ to, label, Icon }) => (
+      <nav
+        className="md:hidden fixed bottom-[var(--site-footer-height)] inset-x-0 z-30 border-t bg-card"
+        style={{
+          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))",
+        }}
+        aria-label="Primary"
+      >
+        <div className="flex items-stretch justify-around">
+          {NAV_PRIMARY.map(({ to, label, Icon }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-medium",
+                  "flex min-h-12 min-w-[3rem] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium touch-manipulation",
                   isActive ? "text-primary" : "text-muted-foreground",
                 )
               }
             >
-              <Icon className="h-5 w-5" />
-              {label}
+              <Icon className="h-5 w-5 shrink-0" aria-hidden />
+              <span className="leading-none">{label}</span>
             </NavLink>
           ))}
+          <Dialog.Root open={moreOpen} onOpenChange={setMoreOpen}>
+            <Dialog.Trigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "flex min-h-12 min-w-[3rem] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium touch-manipulation",
+                  moreTabActive || moreOpen
+                    ? "text-primary"
+                    : "text-muted-foreground",
+                )}
+                aria-label="More sections"
+                aria-expanded={moreOpen}
+              >
+                <Menu className="h-5 w-5 shrink-0" aria-hidden />
+                <span className="leading-none">More</span>
+              </button>
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 md:hidden" />
+              <Dialog.Content
+                className="fixed inset-x-0 bottom-0 z-50 max-h-[min(70vh,28rem)] rounded-t-xl border bg-card shadow-lg outline-none md:hidden"
+                style={{
+                  paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
+                }}
+                aria-describedby={undefined}
+              >
+                <div className="flex items-center justify-between border-b px-4 py-3">
+                  <Dialog.Title className="text-sm font-semibold">
+                    More
+                  </Dialog.Title>
+                  <Dialog.Close asChild>
+                    <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label="Close">
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </Dialog.Close>
+                </div>
+                <nav className="flex flex-col gap-0.5 overflow-y-auto p-2" aria-label="Additional destinations">
+                  {NAV_MORE.map(({ to, label, Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={() => setMoreOpen(false)}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex min-h-12 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium touch-manipulation",
+                          isActive
+                            ? "bg-secondary text-foreground"
+                            : "text-muted-foreground active:bg-secondary/60",
+                        )
+                      }
+                    >
+                      <Icon className="h-5 w-5 shrink-0" aria-hidden />
+                      {label}
+                    </NavLink>
+                  ))}
+                </nav>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         </div>
       </nav>
-    </div>
-  );
-}
-
-function Logo() {
-  return (
-    <div className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-asset-pension to-asset-property shadow-sm">
-      <BarChart3 className="h-4 w-4 text-white" strokeWidth={2.5} />
     </div>
   );
 }
