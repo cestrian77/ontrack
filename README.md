@@ -3,6 +3,11 @@
 A visually rich, **local-first** UK retirement trajectory and wealth projection web app. Implements Phase 1 of the [v5 PRD](./uk-retirement-planner-prd-v5.docx).
 
 > All projections run client-side. No financial data ever leaves your device.
+>
+
+## Licence
+
+GNU Affero General Public License v3.0
 
 ## Highlights
 
