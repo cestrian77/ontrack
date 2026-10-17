@@ -32,10 +32,11 @@ export function buildCashflowSeriesData({
     const passive =
       y.statePensionIncome + y.dbIncome + y.drawdownIncome + y.btlCashflowNet;
     const gross = y.retired ? passive : netEmployed + y.btlCashflowNet;
-    const target =
-      y.retired && profile.targetRetirementIncome > 0
-        ? profile.targetRetirementIncome * factor
-        : null;
+    const need =
+      y.grossSpendingNeed && y.grossSpendingNeed > 0
+        ? y.grossSpendingNeed
+        : profile.targetRetirementIncome;
+    const target = y.retired && need > 0 ? need * factor : null;
     return {
       age: y.age,
       cashflow: gross * factor,

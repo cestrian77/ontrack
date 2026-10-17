@@ -1,5 +1,6 @@
 import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { FireMetrics, Insight, Projection, UserProfile } from "@/engine/types";
+import { summarizePlanning } from "@/engine/planning/summary";
 import { isaBridge } from "@/engine/project/isaBridge";
 import { overpaymentSummary } from "@/engine/property/mortgage";
 import { ageFromDob } from "@/engine/project/runProjection";
@@ -14,6 +15,9 @@ export interface InsightContext {
   projection: Projection;
   fire: FireMetrics;
   taxYearPack: TaxYearPack;
+  primaryProfile?: UserProfile;
+  partnerProfile?: UserProfile | null;
+  partnerProjection?: Projection | null;
 }
 
 type Rule = (ctx: InsightContext) => Insight | null;
@@ -216,6 +220,72 @@ const higherRateRelief: Rule = ({ profile, taxYearPack }) => {
   };
 };
 
+const longTermCareRule: Rule = (ctx) => {
+  const primary = ctx.primaryProfile ?? ctx.profile;
+  const summary = summarizePlanning(ctx.projection, {
+    primary,
+    partner: ctx.partnerProfile,
+    partnerProjection: ctx.partnerProjection,
+  });
+  if (!summary.hasCare || summary.peakAnnualCare <= 0) return null;
+  return {
+    id: "ltc_modelled",
+    category: "property",
+    severity: "info",
+    title: "Long-term care costs in your plan",
+    body: `Your projection includes up to ${fmt(summary.peakAnnualCare)}/year care for ${summary.totalCareYears} years (household total where applicable). Review Settings → Planning & longevity.`,
+    impactScore: 62,
+    actionRoute: "/settings",
+  };
+};
+
+const estateIhtRule: Rule = (ctx) => {
+  const primary = ctx.primaryProfile ?? ctx.profile;
+  const summary = summarizePlanning(ctx.projection, {
+    primary,
+    partner: ctx.partnerProfile,
+    partnerProjection: ctx.partnerProjection,
+  });
+  if (!summary.hasEstate || summary.householdEstateIht <= 0) return null;
+  const detail = summary.estateByPerson
+    .map((e) => `${e.label} ${fmt(e.ihtDue)} at age ${e.age}`)
+    .join("; ");
+  return {
+    id: "estate_iht_illustrative",
+    category: "tax",
+    severity: "info",
+    title: "Illustrative inheritance tax",
+    body: `Estimated IHT on modelled estates: ${detail}. Simplified bands only — not advice.`,
+    impactScore: 58,
+    actionRoute: "/settings",
+  };
+};
+
+const guardrailsRule: Rule = (ctx) => {
+  const primary = ctx.primaryProfile ?? ctx.profile;
+  if (
+    !primary.spendingGuardrails?.enabled &&
+    !ctx.partnerProfile?.spendingGuardrails?.enabled
+  ) {
+    return null;
+  }
+  const summary = summarizePlanning(ctx.projection, {
+    primary,
+    partner: ctx.partnerProfile,
+    partnerProjection: ctx.partnerProjection,
+  });
+  if (summary.latestGuardrailMultiplier == null) return null;
+  return {
+    id: "spending_guardrails",
+    category: "on_track",
+    severity: "info",
+    title: "Dynamic spending guardrails active",
+    body: `Latest retirement-year spending scale is ${Math.round(summary.latestGuardrailMultiplier * 100)}% of plan (portfolio-driven). See Planning & longevity on the dashboard.`,
+    impactScore: 50,
+    actionRoute: "/dashboard",
+  };
+};
+
 const RULES: Rule[] = [
   onTrack,
   isaBridgeRule,
@@ -227,6 +297,9 @@ const RULES: Rule[] = [
   overpayMortgage,
   btlNegativeCashflow,
   higherRateRelief,
+  longTermCareRule,
+  estateIhtRule,
+  guardrailsRule,
 ];
 
 export function generateInsights(ctx: InsightContext): Insight[] {

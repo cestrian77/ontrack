@@ -1,11 +1,14 @@
-import type { UserProfile } from "@/engine/types";
+import type { HouseholdPrefs, UserProfile } from "@/engine/types";
 import { mergeFireCalculationPrefs } from "@/engine/fire/firePrefs";
+import { resolveHouseholdRetirementIncome } from "./householdIncome";
 
 /** Display / insight input for household views: summed targets, primary's ages and global assumptions. */
 export function buildHouseholdSyntheticProfile(
   primary: UserProfile,
   partner: UserProfile,
+  householdPrefs?: HouseholdPrefs | null,
 ): UserProfile {
+  const householdIncome = resolveHouseholdRetirementIncome(primary, partner, householdPrefs);
   return {
     ...primary,
     partnered: true,
@@ -14,8 +17,7 @@ export function buildHouseholdSyntheticProfile(
       partner.statePensionClaimAge,
     ),
     fireCalculationPrefs: mergeFireCalculationPrefs(primary.fireCalculationPrefs),
-    targetRetirementIncome:
-      primary.targetRetirementIncome + partner.targetRetirementIncome,
+    targetRetirementIncome: householdIncome,
     retirementTargetAge: Math.max(
       primary.retirementTargetAge,
       partner.retirementTargetAge,

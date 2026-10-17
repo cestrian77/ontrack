@@ -27,11 +27,16 @@ export function useProjection(profileOverride?: UserProfile): {
   taxYearPack: TaxYearPack;
   /** Profile for chart labels, retirement lines, and insights (synthetic when household). */
   analysisProfile: UserProfile;
+  /** Primary holder profile (always the saved primary, not synthetic). */
+  primaryProfile: UserProfile;
+  partnerProfile: UserProfile | null;
+  partnerProjection: Projection | null;
   analysisViewMode: AnalysisViewMode;
   isHouseholdAnalysis: boolean;
 } {
   const primary = useProfileStore((s) => s.profile);
   const partner = useProfileStore((s) => s.partnerProfile);
+  const householdPrefs = useProfileStore((s) => s.householdPrefs);
   const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const analysisViewMode = useUiStore((s) => s.analysisViewMode);
   const activePersonId = useUiStore((s) => s.activePersonId);
@@ -52,20 +57,26 @@ export function useProjection(profileOverride?: UserProfile): {
       (analysisViewMode === "couple" || analysisViewMode === "family") &&
       part !== null;
 
+    const planningHorizonAge = householdPrefs.planningHorizonAge ?? 100;
+    const runOpts = { taxYearPack, planningHorizonAge };
+
     if (canHousehold) {
-      const projA = runProjection(prim, { taxYearPack });
-      const projB = runProjection(part, { taxYearPack });
+      const projA = runProjection(prim, runOpts);
+      const projB = runProjection(part, runOpts);
       const projection = combineProjections(projA, projB, {
         primary: prim,
         partner: part,
       });
       const fire = computeHouseholdFire(prim, part, projection, taxYearPack);
-      const analysisProfile = buildHouseholdSyntheticProfile(prim, part);
+      const analysisProfile = buildHouseholdSyntheticProfile(prim, part, householdPrefs);
       return {
         projection,
         fire,
         taxYearPack,
         analysisProfile,
+        primaryProfile: prim,
+        partnerProfile: part,
+        partnerProjection: projB,
         analysisViewMode,
         isHouseholdAnalysis: true,
       };
@@ -73,13 +84,16 @@ export function useProjection(profileOverride?: UserProfile): {
 
     const single =
       activePersonId === "partner" && part ? part : prim;
-    const projection = runProjection(single, { taxYearPack });
+    const projection = runProjection(single, runOpts);
     const fire = computeFire(single, projection, taxYearPack);
     return {
       projection,
       fire,
       taxYearPack,
       analysisProfile: single,
+      primaryProfile: prim,
+      partnerProfile: part,
+      partnerProjection: null,
       analysisViewMode,
       isHouseholdAnalysis: false,
     };
@@ -89,6 +103,7 @@ export function useProjection(profileOverride?: UserProfile): {
     taxYearPack,
     analysisViewMode,
     activePersonId,
+    householdPrefs,
   ]);
 }
 

@@ -9,6 +9,113 @@ export type Employment = "employed" | "self_employed" | "both";
 export type MortgageType = "repayment" | "interest_only";
 export type Ownership = "sole" | "joint";
 
+export type DrawdownStrategyId = "legacy" | "tax_aware";
+
+export interface SpendingPhase {
+  id: string;
+  fromAge: number;
+  toAge: number;
+  /** Real £/year in today's money. */
+  annualAmount: number;
+  label?: string;
+}
+
+/** Optional essential vs discretionary split (Phase 8). When set, gross need = sum. */
+export interface FlexibleSpending {
+  essentialAnnual: number;
+  discretionaryAnnual: number;
+}
+
+/** Dynamic spending guardrails (Guyton–Klinger-style) in real terms. */
+export interface SpendingGuardrails {
+  enabled: boolean;
+  /** Min spending as fraction of planned need when portfolio is weak (e.g. 0.8). */
+  floorPctOfPlan: number;
+  /** Max spending as fraction of planned need when portfolio is strong (e.g. 1.2). */
+  ceilingPctOfPlan: number;
+}
+
+/** Illustrative long-term / social care costs in retirement (real £/yr). */
+export interface LongTermCarePrefs {
+  enabled: boolean;
+  fromAge: number;
+  annualCostReal: number;
+  years: number;
+}
+
+/** Simplified UK inheritance tax modelling at a chosen age (illustrative). */
+export interface EstatePlanningPrefs {
+  enabled: boolean;
+  modelAtAge: number;
+  nilRateBand: number;
+  residenceNilRateBand: number;
+  primaryHomeToDirectDescendants: boolean;
+  transferredNilRateToSpouse: boolean;
+  /** Fraction of estate left to charity (0–1); 10%+ may reduce rate to 36%. */
+  charitableLegacyPct: number;
+}
+
+export type LifeEventKind =
+  | "lump_sum_income"
+  | "lump_sum_expense"
+  | "recurring_income"
+  | "recurring_expense"
+  | "property_sale"
+  | "inheritance";
+
+export interface LifeEventBase {
+  id: string;
+  kind: LifeEventKind;
+  label?: string;
+}
+
+export interface LumpSumLifeEvent extends LifeEventBase {
+  kind: "lump_sum_income" | "lump_sum_expense";
+  calendarYear: number;
+  amount: number;
+}
+
+export interface RecurringLifeEvent extends LifeEventBase {
+  kind: "recurring_income" | "recurring_expense";
+  fromYear: number;
+  toYear: number;
+  annualAmount: number;
+}
+
+export interface PropertySaleLifeEvent extends LifeEventBase {
+  kind: "property_sale";
+  calendarYear: number;
+  target: "primary" | "btl";
+  btlIndex?: number;
+  netProceeds?: number;
+  replacementCost?: number;
+  cgtDue?: number;
+}
+
+export interface InheritanceLifeEvent extends LifeEventBase {
+  kind: "inheritance";
+  calendarYear: number;
+  amount: number;
+}
+
+export type LifeEvent =
+  | LumpSumLifeEvent
+  | RecurringLifeEvent
+  | PropertySaleLifeEvent
+  | InheritanceLifeEvent;
+
+export interface AssetClassVolatility {
+  /** Annualised nominal return stdev (decimal, e.g. 0.15). */
+  stdev: number;
+}
+
+export interface MonteCarloVolatilityPrefs {
+  pension: AssetClassVolatility;
+  isa: AssetClassVolatility;
+  gia: AssetClassVolatility;
+  cash: AssetClassVolatility;
+}
+
 /** Which projection row supplies passive income for FIRE income offsets. */
 export type FireReferenceAgeMode = "at_retirement" | "steady_state_after_spa";
 
@@ -127,6 +234,16 @@ export interface UserProfile {
    */
   scenarioContributionAdj?: ScenarioContributionAdj;
 
+  /** Real spending bands in retirement; default = single phase from targetRetirementIncome. */
+  spendingPhases?: SpendingPhase[];
+  timelineEvents?: LifeEvent[];
+  flexibleSpending?: FlexibleSpending;
+  spendingGuardrails?: SpendingGuardrails;
+  longTermCare?: LongTermCarePrefs;
+  estatePlanning?: EstatePlanningPrefs;
+  /** Withdrawal ordering / tax handling; default legacy (ISA → pension → GIA → cash). */
+  drawdownStrategyId?: DrawdownStrategyId;
+
   updatedAt: string;
 }
 
@@ -191,6 +308,23 @@ export interface ProjectionYear {
   dbIncome: number;
   drawdownIncome: number;
   retired: boolean;
+  grossSpendingNeed?: number;
+  essentialSpendingNeed?: number;
+  discretionarySpendingNeed?: number;
+  unmetSpending?: number;
+  eventIncome?: number;
+  eventExpense?: number;
+  employmentGross?: number;
+  longTermCareCost?: number;
+  guardrailSpendingMultiplier?: number;
+  projectedEstateIht?: number;
+  withdrawals?: {
+    fromSsIsa: number;
+    fromPensionNet: number;
+    fromGia: number;
+    fromCash: number;
+    taxOnDrawdown: number;
+  };
 }
 
 export interface Projection {
@@ -203,7 +337,19 @@ export interface Projection {
     horizon: number;
     /** Set when `combineProjections` merged two people (indicative household view). */
     isHousehold?: boolean;
+    planningHorizonAge?: number;
   };
+}
+
+export interface HouseholdPrefs {
+  /** Shared retirement budget when viewing couple/family; defaults to sum of person targets. */
+  householdRetirementIncome?: number | null;
+  monteCarloVolatility?: MonteCarloVolatilityPrefs;
+  /** User planning horizon for stress test (default 100). */
+  planningHorizonAge?: number;
+  monteCarloTrials?: number;
+  monteCarloSeed?: number | null;
+  successUsesEssentialOnly?: boolean;
 }
 
 export interface Insight {

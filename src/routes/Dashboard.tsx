@@ -29,6 +29,8 @@ import {
   captureDashboardPng,
   saveDashboardSnapshot,
 } from "@/lib/dashboardSnapshot";
+import { PlanningLongevityPanel } from "@/components/planning/PlanningLongevityPanel";
+import { summarizePlanning } from "@/engine/planning/summary";
 
 export default function Dashboard() {
   const {
@@ -36,6 +38,9 @@ export default function Dashboard() {
     fire,
     taxYearPack,
     analysisProfile,
+    primaryProfile,
+    partnerProfile,
+    partnerProjection,
     isHouseholdAnalysis,
   } = useProjection();
   const allScenarios = useScenarioStore((s) => s.scenarios);
@@ -46,14 +51,41 @@ export default function Dashboard() {
   );
 
   const { dismissed, reload } = useDismissedInsights();
+  const planningSummary = useMemo(
+    () =>
+      summarizePlanning(projection, {
+        primary: primaryProfile,
+        partner: partnerProfile,
+        partnerProjection,
+      }),
+    [projection, primaryProfile, partnerProfile, partnerProjection],
+  );
+
+  const showPlanningCard =
+    planningSummary.hasCare ||
+    planningSummary.hasGuardrails ||
+    planningSummary.hasEstate;
+
   const insights = useMemo(() => {
     return generateInsights({
       profile: analysisProfile,
       projection,
       fire,
       taxYearPack,
+      primaryProfile,
+      partnerProfile,
+      partnerProjection,
     }).filter((i) => !dismissed.has(i.id));
-  }, [analysisProfile, projection, fire, taxYearPack, dismissed]);
+  }, [
+    analysisProfile,
+    projection,
+    fire,
+    taxYearPack,
+    primaryProfile,
+    partnerProfile,
+    partnerProjection,
+    dismissed,
+  ]);
 
   const dismiss = async (id: string) => {
     await InsightRepo.dismiss(id);
@@ -139,6 +171,25 @@ export default function Dashboard() {
           />
         </CardContent>
       </Card>
+
+      {showPlanningCard && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Planning &amp; longevity</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Care costs, spending guardrails, and illustrative inheritance tax from your Settings assumptions.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <PlanningLongevityPanel
+              projection={projection}
+              primary={primaryProfile}
+              partner={partnerProfile}
+              partnerProjection={partnerProjection}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">

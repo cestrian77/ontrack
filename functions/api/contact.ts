@@ -11,6 +11,7 @@
  * Set exactly one mail provider:
  *   BREVO_API_KEY         — Brevo (Sendinblue) REST API key
  *   SMTP2GO_API_KEY       — SMTP2GO REST API key (header X-Smtp2go-Api-Key)
+ *   TURNSTILE_SECRET_KEY  — Cloudflare Turnstile secret (recommended in production)
  *
  * Local: run `npm run build` then `npm run dev:pages` (wrangler pages dev) on port 8788,
  * and in another terminal `npm run dev` so Vite proxies /api → 8788 (see vite.config.ts).
@@ -22,6 +23,7 @@ type Env = {
   CONTACT_ALLOWED_ORIGIN?: string;
   BREVO_API_KEY?: string;
   SMTP2GO_API_KEY?: string;
+  TURNSTILE_SECRET_KEY?: string;
 };
 
 const REASON_LABEL: Record<string, string> = {
@@ -34,6 +36,38 @@ const REASON_LABEL: Record<string, string> = {
 const MAX_NAME = 200;
 const MAX_EMAIL = 320;
 const MAX_MESSAGE = 10000;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 8;
+
+/** Best-effort per-isolate burst limit; pair with Turnstile + Cloudflare WAF for production. */
+const rateByIp = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const row = rateByIp.get(ip);
+  if (!row || now > row.resetAt) {
+    rateByIp.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  row.count += 1;
+  return row.count > RATE_LIMIT_MAX;
+}
+
+async function verifyTurnstile(
+  secret: string,
+  token: string,
+  remoteip: string | null,
+): Promise<boolean> {
+  const body = new URLSearchParams({ secret, response: token });
+  if (remoteip) body.set("remoteip", remoteip);
+  const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    body,
+  });
+  if (!res.ok) return false;
+  const data = (await res.json()) as { success?: boolean };
+  return data.success === true;
+}
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -117,6 +151,11 @@ export async function onRequestPost(context: {
     return json({ error: "Forbidden" }, 403);
   }
 
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  if (rateLimited(ip)) {
+    return json({ error: "Too many requests. Please try again shortly." }, 429);
+  }
+
   if (!env.CONTACT_TO_EMAIL || !env.CONTACT_FROM_EMAIL) {
     return json({ error: "Contact endpoint is not configured." }, 503);
   }
@@ -143,6 +182,19 @@ export async function onRequestPost(context: {
   const name = typeof o.name === "string" ? o.name.trim() : "";
   const email = typeof o.email === "string" ? o.email.trim() : "";
   const message = typeof o.message === "string" ? o.message.trim() : "";
+  const turnstileToken =
+    typeof o.turnstileToken === "string" ? o.turnstileToken.trim() : "";
+
+  const turnstileSecret = env.TURNSTILE_SECRET_KEY?.trim();
+  if (turnstileSecret) {
+    if (!turnstileToken) {
+      return json({ error: "Verification required." }, 400);
+    }
+    const ok = await verifyTurnstile(turnstileSecret, turnstileToken, ip);
+    if (!ok) {
+      return json({ error: "Verification failed. Please try again." }, 403);
+    }
+  }
 
   if (!REASON_LABEL[reason]) {
     return json({ error: "Invalid reason." }, 400);

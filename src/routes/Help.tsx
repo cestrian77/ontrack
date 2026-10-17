@@ -29,7 +29,7 @@ export default function Help() {
             <strong className="text-foreground">Modelled:</strong> workplace and SIPP pensions, ISAs (including LISA rules), GIA with a simplified CGT drag, primary home and BTL with Section 24 mortgage interest treatment, state pension growth after claim age, DB pensions, inheritance timing, and several FIRE variants.
           </p>
           <p>
-            <strong className="text-foreground">Not modelled:</strong> detailed Self Assessment, capital gains on each disposal, child benefit charges, SDLT on purchases, joint tax splitting beyond BTL ownership, or product-specific fees. Use this app for direction, not filing.
+            <strong className="text-foreground">Not modelled:</strong> Open Banking, detailed Self Assessment, per-disposal CGT, child benefit charges, SDLT on purchases, full IHT planning (gifts/Trusts), or product-specific fees. Use this app for direction, not filing.
           </p>
           <Button variant="outline" size="sm" asChild>
             <Link to="/settings">Tax year and global assumptions</Link>
@@ -100,6 +100,54 @@ export default function Help() {
           <p>
             Use real for &quot;will I be better off in terms of spending power?&quot; Use nominal when you want to see headline pound totals that grow with inflation.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card id="stress-testing" className="scroll-mt-[calc(var(--site-header-height)+0.75rem)]">
+        <CardHeader>
+          <CardTitle>Stress testing</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            The <Link className="text-primary underline underline-offset-2" to="/stress">Stress test</Link> page
+            reuses the same annual engine as your dashboard. <strong className="text-foreground">Monte Carlo</strong>{" "}
+            draws many random return paths (seeded for reproducibility).{" "}
+            <strong className="text-foreground">Historical backtest</strong> runs one path through an illustrative
+            UK equity/cash return series — not a full rolling-period study.
+          </p>
+          <p>
+            Property appreciation and rent follow your profile assumptions; only investment returns vary by path.
+            Success means retirement spending is met each year until your planning horizon (optional essential-only mode).
+          </p>
+          <p>
+            Source docs in the repo: <code className="text-xs">docs/MONTE_CARLO_METHODOLOGY.md</code> and{" "}
+            <code className="text-xs">docs/HISTORICAL_BACKTEST_METHODOLOGY.md</code>.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card id="career-guardrails-care-iht" className="scroll-mt-[calc(var(--site-header-height)+0.75rem)]">
+        <CardHeader>
+          <CardTitle>Career path, guardrails, care &amp; IHT</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Salary growth and bonus</strong> compound on your employment income
+            while you are still working, affecting pension contributions and BTL marginal tax rates.
+          </p>
+          <p>
+            <strong className="text-foreground">Spending guardrails</strong> (optional) scale discretionary spending
+            up or down based on portfolio performance vs the wealth at retirement entry — a simplified Guyton–Klinger-style rule.
+          </p>
+          <p>
+            <strong className="text-foreground">Long-term care</strong> adds a real £/year cost for a window of ages
+            you choose (illustrative social/care fees).
+          </p>
+          <p>
+            <strong className="text-foreground">Inheritance tax</strong> shows an illustrative IHT estimate at a chosen
+            age on total net worth (nil-rate bands + residence band). It does not model gifts, trusts, or step-up rules.
+          </p>
+          <p>Configure these under Settings → Planning &amp; longevity.</p>
         </CardContent>
       </Card>
 

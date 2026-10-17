@@ -27,7 +27,7 @@ describe("exportAll / importAll", () => {
     const json = await exportAll();
     expect(json).toContain("insightDismissals");
     expect(json).toContain("test_insight_id");
-    expect(json).toContain('"version": 2');
+    expect(json).toContain('"version": 3');
 
     await db.transaction("rw", db.profile, db.scenarios, db.insights, async () => {
       await db.profile.clear();

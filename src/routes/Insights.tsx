@@ -6,7 +6,15 @@ import { InsightCard } from "@/components/insights/InsightCard";
 import { InsightRepo } from "@/db/repository";
 
 export default function Insights() {
-  const { projection, fire, taxYearPack, analysisProfile } = useProjection();
+  const {
+    projection,
+    fire,
+    taxYearPack,
+    analysisProfile,
+    primaryProfile,
+    partnerProfile,
+    partnerProjection,
+  } = useProjection();
   const { dismissed, reload } = useDismissedInsights();
 
   const all = useMemo(
@@ -16,8 +24,19 @@ export default function Insights() {
         projection,
         fire,
         taxYearPack,
+        primaryProfile,
+        partnerProfile,
+        partnerProjection,
       }),
-    [analysisProfile, projection, fire, taxYearPack],
+    [
+      analysisProfile,
+      projection,
+      fire,
+      taxYearPack,
+      primaryProfile,
+      partnerProfile,
+      partnerProjection,
+    ],
   );
   const active = all.filter((i) => !dismissed.has(i.id));
   const hidden = all.filter((i) => dismissed.has(i.id));

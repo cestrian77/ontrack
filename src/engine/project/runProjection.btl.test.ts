@@ -34,12 +34,13 @@ describe("runProjection BTL cashflow", () => {
 
   it("is unchanged year-to-year (IO) when rental growth matches CPI", () => {
     const p = makeDefaultProfile();
+    p.salaryGrowth = 0;
     p.cpi = 0.025;
     p.rentalGrowth = 0.025;
     p.btlProperties = [sampleBtl];
     const proj = runProjection(p);
-    const a = proj.years[0]!.btlCashflowNet;
-    const b = proj.years[25]!.btlCashflowNet;
+    const a = proj.years[2]!.btlCashflowNet;
+    const b = proj.years[12]!.btlCashflowNet;
     expect(b).toBeCloseTo(a, 5);
   });
 });

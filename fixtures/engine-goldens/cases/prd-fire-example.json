@@ -59,6 +59,18 @@
     "leanFirePct": 0.7,
     "fatFirePct": 1.5,
     "baristaPartTimeIncome": 12000,
+    "fireCalculationPrefs": {
+      "offsetStatePension": false,
+      "offsetDbPension": false,
+      "offsetBtlNet": false,
+      "referenceAgeMode": "at_retirement",
+      "includePensionInPot": true,
+      "includeSsIsaInPot": true,
+      "includeCashIsaInPot": true,
+      "includeLisaInPot": true,
+      "includeGiaInPot": true,
+      "includeCashInPot": true
+    },
     "updatedAt": "2026-05-10T12:00:00.000Z"
   },
   "expected": {
@@ -82,7 +94,8 @@
         "retirementAge": 60,
         "nmpa": 57,
         "spa": 67,
-        "horizon": 65
+        "horizon": 65,
+        "planningHorizonAge": 100
       },
       "yearSnapshots": [
         {
@@ -100,9 +113,9 @@
           "index": 5,
           "year": 2031,
           "age": 41,
-          "totalNetWorth": 386359.32693457365,
-          "investableNetWorth": 150748.91646994016,
-          "pensionValue": 87901.8916389292,
+          "totalNetWorth": 388761.6688608484,
+          "investableNetWorth": 153151.25839621492,
+          "pensionValue": 90304.23356520395,
           "isaValue": 47100.90032729452,
           "primaryEquity": 235610.4104646335,
           "retired": false
@@ -111,9 +124,9 @@
           "index": 10,
           "year": 2036,
           "age": 46,
-          "totalNetWorth": 556837.5738257675,
-          "investableNetWorth": 219218.11976701304,
-          "pensionValue": 130657.00418937574,
+          "totalNetWorth": 566404.8565745908,
+          "investableNetWorth": 228785.40251583635,
+          "pensionValue": 140224.28693819905,
           "isaValue": 72031.75311853463,
           "primaryEquity": 337619.45405875443,
           "retired": false
@@ -122,9 +135,9 @@
           "index": 25,
           "year": 2051,
           "age": 61,
-          "totalNetWorth": 1113862.9598732623,
-          "investableNetWorth": 381040.68449428654,
-          "pensionValue": 282517.78288282023,
+          "totalNetWorth": 1176548.3166602943,
+          "investableNetWorth": 443726.0412813186,
+          "pensionValue": 345203.1396698523,
           "isaValue": 79402.2200353135,
           "primaryEquity": 732822.2753789758,
           "retired": true

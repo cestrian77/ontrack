@@ -1,4 +1,8 @@
-import type { Scenario, UserProfile } from "@/engine/types";
+import type { HouseholdPrefs, Scenario, UserProfile } from "@/engine/types";
+
+/** ~10 MB JSON export cap to avoid freezing the browser on import. */
+export const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
+import { DEFAULT_MONTE_CARLO_VOLATILITY } from "@/engine/montecarlo/defaults";
 import { mergeFireCalculationPrefs } from "@/engine/fire/firePrefs";
 import type { ProfileRowV2 } from "./dexie";
 import { db } from "./dexie";
@@ -12,12 +16,24 @@ function normalizeUserProfile(data: UserProfile): UserProfile {
   };
 }
 
+function normalizeHouseholdPrefs(prefs?: HouseholdPrefs): HouseholdPrefs {
+  return {
+    planningHorizonAge: prefs?.planningHorizonAge ?? 100,
+    monteCarloTrials: prefs?.monteCarloTrials ?? 1000,
+    monteCarloSeed: prefs?.monteCarloSeed ?? null,
+    successUsesEssentialOnly: prefs?.successUsesEssentialOnly ?? false,
+    householdRetirementIncome: prefs?.householdRetirementIncome ?? null,
+    monteCarloVolatility: prefs?.monteCarloVolatility ?? DEFAULT_MONTE_CARLO_VOLATILITY,
+  };
+}
+
 function normalizeHouseholdRow(row: ProfileRowV2): ProfileRowV2 {
   return {
     ...row,
     primary: normalizeUserProfile(row.primary),
     partner: row.partner ? normalizeUserProfile(row.partner) : null,
     dependentCount: row.dependentCount ?? 0,
+    householdPrefs: normalizeHouseholdPrefs(row.householdPrefs),
   };
 }
 
@@ -26,6 +42,7 @@ export const ProfileRepo = {
     profile: UserProfile | null;
     partnerProfile: UserProfile | null;
     dependentCount: number;
+    householdPrefs: HouseholdPrefs;
     onboardingComplete: boolean;
   }> {
     const row = await db.profile.get("singleton");
@@ -34,6 +51,7 @@ export const ProfileRepo = {
         profile: null,
         partnerProfile: null,
         dependentCount: 0,
+        householdPrefs: normalizeHouseholdPrefs(),
         onboardingComplete: false,
       };
     }
@@ -42,6 +60,7 @@ export const ProfileRepo = {
       profile: n.primary,
       partnerProfile: n.partner,
       dependentCount: n.dependentCount,
+      householdPrefs: n.householdPrefs ?? normalizeHouseholdPrefs(),
       onboardingComplete: n.onboardingComplete,
     };
   },
@@ -49,6 +68,7 @@ export const ProfileRepo = {
     profile: UserProfile;
     partnerProfile: UserProfile | null;
     dependentCount: number;
+    householdPrefs?: HouseholdPrefs;
     onboardingComplete: boolean;
   }): Promise<void> {
     const now = new Date().toISOString();
@@ -59,6 +79,7 @@ export const ProfileRepo = {
         ? { ...args.partnerProfile, updatedAt: now }
         : null,
       dependentCount: args.dependentCount,
+      householdPrefs: normalizeHouseholdPrefs(args.householdPrefs),
       onboardingComplete: args.onboardingComplete,
       updatedAt: now,
     });
@@ -101,7 +122,7 @@ export async function exportAll(): Promise<string> {
   const insightDismissals = await db.insights.toArray();
   return JSON.stringify(
     {
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       household,
       scenarios,
@@ -125,6 +146,9 @@ function normalizeImportedHousehold(raw: unknown): ProfileRowV2 | null {
           ? normalizeUserProfile(o.partner as UserProfile)
           : null,
       dependentCount: typeof o.dependentCount === "number" ? o.dependentCount : 0,
+      householdPrefs: normalizeHouseholdPrefs(
+        o.householdPrefs as HouseholdPrefs | undefined,
+      ),
       onboardingComplete: Boolean(o.onboardingComplete),
       updatedAt:
         typeof o.updatedAt === "string"
@@ -139,6 +163,7 @@ function normalizeImportedHousehold(raw: unknown): ProfileRowV2 | null {
       primary: normalizeUserProfile(o.data as UserProfile),
       partner: null,
       dependentCount: 0,
+      householdPrefs: normalizeHouseholdPrefs(),
       onboardingComplete: Boolean(o.onboardingComplete),
       updatedAt:
         typeof o.updatedAt === "string"
@@ -150,10 +175,32 @@ function normalizeImportedHousehold(raw: unknown): ProfileRowV2 | null {
   return null;
 }
 
+function isScenarioLike(value: unknown): value is Scenario {
+  if (!value || typeof value !== "object") return false;
+  const o = value as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.name === "string" &&
+    typeof o.colour === "string" &&
+    typeof o.createdAt === "string" &&
+    (o.overrides == null || typeof o.overrides === "object")
+  );
+}
+
 export async function importAll(json: string): Promise<void> {
-  const parsed = JSON.parse(json) as Record<string, unknown>;
+  if (json.length > MAX_IMPORT_BYTES) {
+    throw new Error(`Import file is too large (max ${MAX_IMPORT_BYTES / (1024 * 1024)} MB).`);
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    throw new Error("Invalid JSON file.");
+  }
+
   const version = parsed.version;
-  if (version !== 1 && version !== 2) {
+  if (version !== 1 && version !== 2 && version !== 3) {
     throw new Error("Unsupported export version");
   }
 
@@ -173,7 +220,12 @@ export async function importAll(json: string): Promise<void> {
     await db.insights.clear();
     if (householdRow) await db.profile.put(normalizeHouseholdRow(householdRow));
     if (Array.isArray(scenarios)) {
-      for (const s of scenarios) await db.scenarios.put(s as Scenario);
+      for (const s of scenarios) {
+        if (!isScenarioLike(s)) {
+          throw new Error("Invalid scenario entry in import file.");
+        }
+        await db.scenarios.put(s);
+      }
     }
     if (Array.isArray(insightDismissals)) {
       for (const row of insightDismissals) {

@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { exportAll, importAll } from "@/db/repository";
+import { exportAll, importAll, MAX_IMPORT_BYTES } from "@/db/repository";
+import { PlanningLongevityFields } from "@/components/settings/PlanningLongevityFields";
 import { Link } from "react-router-dom";
 import { runProjection } from "@/engine/project/runProjection";
 import { computeFire } from "@/engine/fire/fire";
@@ -28,6 +29,8 @@ export default function Settings() {
   const dependentCount = useProfileStore((s) => s.dependentCount);
   const setPartnerProfile = useProfileStore((s) => s.setPartnerProfile);
   const setDependentCount = useProfileStore((s) => s.setDependentCount);
+  const householdPrefs = useProfileStore((s) => s.householdPrefs);
+  const updateHouseholdPrefs = useProfileStore((s) => s.updateHouseholdPrefs);
   const updatePartner = useProfileStore((s) => s.updatePartner);
   const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const setAnalysisTaxYearLabel = useUiStore((s) => s.setAnalysisTaxYearLabel);
@@ -77,9 +80,24 @@ export default function Settings() {
   };
 
   const onImport = async (file: File) => {
-    const text = await file.text();
-    await importAll(text);
-    location.reload();
+    if (file.size > MAX_IMPORT_BYTES) {
+      alert(`File is too large (max ${MAX_IMPORT_BYTES / (1024 * 1024)} MB).`);
+      return;
+    }
+    if (
+      !confirm(
+        "Import will replace all local data on this device (profile, scenarios, insights). Continue?",
+      )
+    ) {
+      return;
+    }
+    try {
+      const text = await file.text();
+      await importAll(text);
+      location.reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Import failed.");
+    }
   };
 
   return (
@@ -131,6 +149,21 @@ export default function Settings() {
                 Partner profile is saved. Use the header switch (Individual / Couple / Family) and
                 &quot;Partner&quot; when editing Property or Tax for their numbers.
               </p>
+              <Field
+                label="Household retirement income"
+                hint="Shared spending target for couple/family views and stress tests. Leave blank to use the sum of both targets."
+              >
+                <NumberInput
+                  value={householdPrefs.householdRetirementIncome ?? 0}
+                  onChange={(n) =>
+                    updateHouseholdPrefs({
+                      householdRetirementIncome: n > 0 ? n : null,
+                    })
+                  }
+                  min={0}
+                  step={500}
+                />
+              </Field>
               <Field label="Dependents (for Family view label)" hint="Does not change tax or projections yet.">
                 <NumberInput
                   value={dependentCount}
@@ -234,6 +267,66 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Stress test defaults</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Used on the Stress test page. Partner households share these prefs.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2 max-w-lg">
+          <Field label="Monte Carlo seed" hint="Reproducible paths when set (default 42).">
+            <NumberInput
+              value={householdPrefs.monteCarloSeed ?? 0}
+              onChange={(n) =>
+                updateHouseholdPrefs({ monteCarloSeed: n > 0 ? n : null })
+              }
+              min={0}
+              step={1}
+            />
+          </Field>
+          <Field label="Default trials">
+            <NumberInput
+              value={householdPrefs.monteCarloTrials ?? 1000}
+              onChange={(n) => updateHouseholdPrefs({ monteCarloTrials: n })}
+              min={200}
+              max={3000}
+              step={100}
+            />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Planning &amp; longevity</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Career growth is always applied while working. Optional guardrails, care costs, and illustrative IHT.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <PlanningLongevityFields profile={profile} onPatch={update} />
+        </CardContent>
+      </Card>
+
+      {partnerProfile ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Partner — planning &amp; longevity</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Separate care, guardrails, and IHT assumptions for your partner. Household dashboard totals combine both.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <PlanningLongevityFields
+              profile={partnerProfile}
+              onPatch={updatePartner}
+              showCareer={true}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Card>
+        <CardHeader>
           <CardTitle>Global assumptions</CardTitle>
           <p className="text-xs text-muted-foreground">
             Tweak these to stress-test your projection. Defaults follow PRD §5.2.
@@ -246,6 +339,63 @@ export default function Settings() {
               onChange={(n) => update({ cpi: n })}
               min={0}
               max={10}
+            />
+          </Field>
+          <Field
+            label="Drawdown strategy"
+            hint="Legacy = ISA then pension (net). Tax-aware grosses up pension withdrawals."
+          >
+            <Select
+              value={profile.drawdownStrategyId ?? "legacy"}
+              onValueChange={(v) =>
+                update({ drawdownStrategyId: v as "legacy" | "tax_aware" })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="legacy">Legacy (default)</SelectItem>
+                <SelectItem value="tax_aware">Tax-aware pension gross-up</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field
+            label="Essential spending (flexible)"
+            hint="Optional. With discretionary below, replaces flat retirement target for need."
+          >
+            <NumberInput
+              value={profile.flexibleSpending?.essentialAnnual ?? 0}
+              onChange={(n) => {
+                const d = profile.flexibleSpending?.discretionaryAnnual ?? 0;
+                if (n <= 0 && d <= 0) {
+                  update({ flexibleSpending: undefined });
+                  return;
+                }
+                update({ flexibleSpending: { essentialAnnual: n, discretionaryAnnual: d } });
+              }}
+              min={0}
+              step={500}
+            />
+          </Field>
+          <Field label="Discretionary spending (flexible)">
+            <NumberInput
+              value={profile.flexibleSpending?.discretionaryAnnual ?? 0}
+              onChange={(n) => {
+                const e = profile.flexibleSpending?.essentialAnnual ?? 0;
+                if (n <= 0 && e <= 0) {
+                  update({ flexibleSpending: undefined });
+                  return;
+                }
+                update({
+                  flexibleSpending: {
+                    essentialAnnual: e > 0 ? e : profile.targetRetirementIncome,
+                    discretionaryAnnual: n,
+                  },
+                });
+              }}
+              min={0}
+              step={500}
             />
           </Field>
           <Field label="Cash interest rate" hint="Non-ISA cash savings only.">

@@ -5,6 +5,16 @@ export interface CombineProjectionsOptions {
   excludePartnerPrimary: boolean;
 }
 
+function mergeGuardrailMultiplier(
+  a?: number,
+  b?: number,
+): number | undefined {
+  if (a == null && b == null) return undefined;
+  if (a == null) return b;
+  if (b == null) return a;
+  return (a + b) / 2;
+}
+
 function zeroPrimaryFields(y: ProjectionYear): ProjectionYear {
   return {
     ...y,
@@ -65,6 +75,39 @@ function mergeYear(
     dbIncome: a.dbIncome + bEff.dbIncome,
     drawdownIncome: a.drawdownIncome + bEff.drawdownIncome,
     retired: a.retired && bEff.retired,
+    grossSpendingNeed: (a.grossSpendingNeed ?? 0) + (bEff.grossSpendingNeed ?? 0),
+    essentialSpendingNeed: (a.essentialSpendingNeed ?? 0) + (bEff.essentialSpendingNeed ?? 0),
+    discretionarySpendingNeed:
+      (a.discretionarySpendingNeed ?? 0) + (bEff.discretionarySpendingNeed ?? 0),
+    unmetSpending: (a.unmetSpending ?? 0) + (bEff.unmetSpending ?? 0),
+    eventIncome: (a.eventIncome ?? 0) + (bEff.eventIncome ?? 0),
+    eventExpense: (a.eventExpense ?? 0) + (bEff.eventExpense ?? 0),
+    longTermCareCost:
+      (a.longTermCareCost ?? 0) + (bEff.longTermCareCost ?? 0) > 0
+        ? (a.longTermCareCost ?? 0) + (bEff.longTermCareCost ?? 0)
+        : undefined,
+    projectedEstateIht:
+      (a.projectedEstateIht ?? 0) + (bEff.projectedEstateIht ?? 0) > 0
+        ? (a.projectedEstateIht ?? 0) + (bEff.projectedEstateIht ?? 0)
+        : undefined,
+    guardrailSpendingMultiplier: mergeGuardrailMultiplier(
+      a.guardrailSpendingMultiplier,
+      bEff.guardrailSpendingMultiplier,
+    ),
+    withdrawals:
+      a.withdrawals || bEff.withdrawals
+        ? {
+            fromSsIsa:
+              (a.withdrawals?.fromSsIsa ?? 0) + (bEff.withdrawals?.fromSsIsa ?? 0),
+            fromPensionNet:
+              (a.withdrawals?.fromPensionNet ?? 0) +
+              (bEff.withdrawals?.fromPensionNet ?? 0),
+            fromGia: (a.withdrawals?.fromGia ?? 0) + (bEff.withdrawals?.fromGia ?? 0),
+            fromCash: (a.withdrawals?.fromCash ?? 0) + (bEff.withdrawals?.fromCash ?? 0),
+            taxOnDrawdown:
+              (a.withdrawals?.taxOnDrawdown ?? 0) + (bEff.withdrawals?.taxOnDrawdown ?? 0),
+          }
+        : undefined,
   };
 }
 

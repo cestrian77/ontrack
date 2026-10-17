@@ -1,9 +1,8 @@
 # OnTrack — UK Retirement Trajectory Planner
 
-A visually rich, **local-first** UK retirement trajectory and wealth projection web app. Implements Phase 1 of the [v5 PRD](./uk-retirement-planner-prd-v5.docx).
+A visually rich, **local-first** UK retirement trajectory and wealth projection web app. Implements Phase 1 of the [v5 PRD](./uk-retirement-planner-prd-v5.docx) plus stress testing and planning extensions.
 
-> All projections run client-side. No financial data ever leaves your device.
->
+> Projections and stress tests run **client-side**. Profile data stays in your browser (IndexedDB). Only the optional **Contact** form posts to your hosted `/api/contact` endpoint — see [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Licence
 
@@ -11,103 +10,56 @@ GNU Affero General Public License v3.0
 
 ## Highlights
 
-- Annual-step deterministic projection engine to age 100 (real-terms with nominal toggle)
-- UK tax modelling from frozen per-year packs (active year follows the calendar); England/Wales + Scottish bands, NI, PA taper, CGT, dividend tax
-- Pension wrappers: workplace, SIPP relief at source, salary sacrifice efficiency, Annual Allowance with taper, MPAA, DB streams
-- ISA / LISA (25% bonus, age 50/60 rules) / GIA (with CGT drag) / Cash ISA — `£20k` combined cap enforced
-- Primary residence + up to 10 BTLs with **Section 24** mortgage interest restriction modelled (PRD §8.2)
-- Mortgage amortisation: repayment, interest-only, with overpayment summary (interest saved + months saved)
-- All 5 FIRE variants: Full, Lean, Fat, Coast, Barista — with progress %, FIRE age, Coast crossover
-- ISA bridge analysis when retiring before NMPA
-- Rule-based insights across all 6 PRD categories with 30-day dismissal window
-- 8 charts: Wealth Journey, Retirement Income Stack, FIRE Ring + Timeline, Waterfall, Mortgage Amort, BTL Dashboard, Allocation Donut, Tax Efficiency
-- Up to 3 named scenarios with side-by-side delta comparison; 10 prebuilt templates
-- Dark mode, responsive 375px+ to 1280px+, mobile bottom nav, inflation toggle on every monetary chart
-- PWA installable with offline shell
+- Annual-step deterministic projection engine to planning horizon (default age 100), real-terms with nominal toggle
+- **Career path:** salary growth and bonus while working (pension contributions, BTL marginal rates)
+- **Stress test:** Monte Carlo (seeded) and illustrative historical backtest via Web Worker
+- **Drawdown:** legacy ordering or tax-aware pension gross-up; optional **spending guardrails**
+- **Long-term care** cost window and illustrative **inheritance tax** estimate at a chosen age
+- UK tax modelling from frozen per-year packs; England/Wales + Scottish bands, NI, PA taper, CGT, dividend tax
+- Pension wrappers, ISAs/LISA/GIA, primary home + BTL (Section 24), mortgage amortisation
+- FIRE variants, ISA bridge, scenarios, insights, **PDF reports**
+- Couple / family household merge; PWA with offline shell
+- **No Open Banking** — intentional for simplicity and privacy
 
 ## Stack
 
-React 18 · TypeScript · Vite · Tailwind · shadcn-style components · Recharts · Zustand · Dexie (IndexedDB) · Vitest · vite-plugin-pwa · SwiftUI (iOS) · Cloudflare Pages
+React 18 · TypeScript · Vite · Tailwind · Recharts · Zustand · Dexie · Vitest · Cloudflare Pages (static + contact function)
 
 ## Run
 
 ```bash
 npm install
-npm run dev          # dev server on http://localhost:5173
-npm test             # run engine + acceptance test suites
-npm run typecheck    # strict TS check
-npm run build        # production build to ./dist (PWA assets generated)
+npm run dev          # http://localhost:5173
+npm test
+npm run typecheck
+npm run lint
+npm run build
 ```
 
-## Deploy to Cloudflare Pages
+## Deploy
+
+See **[docs/DEPLOY.md](docs/DEPLOY.md)** for Cloudflare Pages, contact mail env vars, Turnstile, and security headers.
 
 ```bash
 npm run build
 npx wrangler pages deploy dist
 ```
 
-`wrangler.jsonc` is included with the project name `ontrack` and `pages_build_output_dir = ./dist`.
+CI on `main`: typecheck, tests, lint, build (`.github/workflows/ci.yml`).
 
-## iOS (SwiftUI)
+## iOS (optional)
 
-The native app lives under `ios/App/`. Open **`ios/App/App.xcodeproj`** (not CocoaPods). Minimum iOS **17** (SwiftData). The projection engine is still TypeScript on web; iOS will consume the same JSON goldens under `fixtures/engine-goldens/` (see `docs/ENGINE_DUAL_PLATFORM.md`).
+Swift companion under `ios/` — not required for the open-source web app. See `docs/ENGINE_DUAL_PLATFORM.md` and `npm run test:ios-engine`.
 
-```bash
-npm run test:ios-engine   # Swift package decodes golden fixtures (CI parity hook)
-```
+## Docs
 
-In Xcode: select your team for signing, choose a simulator or device, then **Run**.
-
-For App Store Connect steps (signing, privacy, TestFlight), see [docs/ios-release.md](docs/ios-release.md).
-
-## Project structure
-
-```
-src/
-  app/                  # router, layout, theme provider
-  routes/               # pages (Welcome, onboarding, dashboard, fire, scenarios, property, tax, insights, settings)
-  components/
-    ui/                 # shadcn-style primitives
-    charts/             # 8 PRD charts
-    forms/              # Field, NumberInput, PercentInput
-    insights/           # InsightCard
-  engine/
-    types.ts            # core domain types
-    constants/          # uk.ts (PRD §14), defaults.ts (§5.2)
-    tax/                # incomeTax (E&W + Scotland), ni, cgt, dividend
-    pension/            # contributions, relief, AA taper, DB
-    wrappers/           # isa, gia, lisa
-    property/           # mortgage amortisation + overpayment
-    btl/                # cashflow with Section 24
-    project/            # runProjection, isaBridge
-    fire/               # FIRE metrics
-    insights/           # rule engine
-    scenarios/          # 10 prebuilt templates + apply
-  db/                   # Dexie schema + repositories (export/import)
-  store/                # Zustand stores (profile, scenarios, ui)
-  lib/                  # cn, gbp/pct formatters, hooks
-  test/                 # setup + golden acceptance tests
-```
-
-## Verified PRD examples
-
-The test suite includes golden cases for:
-
-- §5.3.1 PA taper between £100k–£125,140
-- §5.3.1/5.3.2 England/Wales and Scottish income tax bands
-- §5.3.3 NI bands
-- §5.4.2 Annual Allowance taper
-- §5.8.1 Mortgage amortisation (£200k @ 5% / 25y → £1,169.18/mo)
-- §6.1.1 FIRE number (£40k ÷ 3.5% = £1,142,857)
-- §6.1.4 Coast FIRE
-- §8.2 Section 24 worked example (£15k rent → £1,200 net cashflow at higher rate)
-
-## Scope
-
-This implementation covers **Phase 1 Must + Should + Could** (PRD §16.1–16.3). Items deferred to Phase 2/3 (Monte Carlo, drawdown sequencing optimiser, Bed & ISA automation, BTL CGT optimisation, couples module, Open Banking, cloud sync, PDF export) are not included.
+- [Monte Carlo methodology](docs/MONTE_CARLO_METHODOLOGY.md)
+- [Historical backtest methodology](docs/HISTORICAL_BACKTEST_METHODOLOGY.md)
+- [Architecture (v2 direction)](docs/ONTRACK_V2_ARCHITECTURE.md)
+- [Changelog](CHANGELOG.md)
 
 ## Privacy
 
-- No analytics that capture financial input values
-- No third-party trackers
-- All state in IndexedDB; export/import as JSON for portability
+- No analytics on financial inputs; no third-party trackers in the app shell
+- Local state in IndexedDB; export/import JSON for backup
+- Contact form only when you choose to send a message (optional Turnstile + rate limits on the server)

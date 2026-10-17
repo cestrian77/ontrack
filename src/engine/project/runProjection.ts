@@ -6,6 +6,29 @@ import type {
 } from "@/engine/types";
 import type { TaxYearPack } from "@/engine/constants/taxYears";
 import { currentTaxYearPack } from "@/engine/constants/taxYears";
+import {
+  economicScenarioFromProfile,
+  economicYearFromProfile,
+  resolveEconomicYear,
+} from "@/engine/economics/fromProfile";
+import type { EconomicScenario } from "@/engine/economics/types";
+import { realRate } from "@/engine/economics/realRate";
+import { resolveYearEvents, timelineEventsForProfile } from "@/engine/events/resolve";
+import { getDrawdownStrategy } from "@/engine/drawdown";
+import {
+  careerTaxableEmploymentIncome,
+} from "@/engine/cashflow/careerPath";
+import { longTermCareCostAtAge } from "@/engine/care/longTermCare";
+import { estimateUkIht } from "@/engine/estate/iht";
+import {
+  applySpendingGuardrails,
+} from "@/engine/spending/guardrails";
+import {
+  discretionarySpendingAtAge,
+  essentialSpendingAtAge,
+  grossSpendingNeedAtAge,
+} from "@/engine/spending/need";
+import { applyBtlSale, applyPrimarySale } from "@/engine/property/disposal";
 import { dbAnnualIncomeAtAge } from "@/engine/pension/db";
 import {
   sippGrossAnnual,
@@ -15,13 +38,15 @@ import { compoundAnnual, lisaAnnualGrowth } from "@/engine/wrappers/isa";
 import { giaAnnualGrowth } from "@/engine/wrappers/gia";
 import { balanceAfterMonths } from "@/engine/property/mortgage";
 import { btlAnnualCashflow } from "@/engine/btl/cashflow";
-
-const HORIZON_AGE = 100;
+import { DEFAULT_PLANNING_HORIZON_AGE } from "@/engine/montecarlo/defaults";
 
 export interface RunProjectionOptions {
   taxYearPack?: TaxYearPack;
   /** ISO calendar date (yyyy-mm-dd). Fixes "today" for deterministic tests and cross-platform goldens. */
   asOfDate?: string;
+  economicScenario?: EconomicScenario;
+  /** Plan to this age (default 100). */
+  planningHorizonAge?: number;
 }
 
 function resolveAsOf(options?: RunProjectionOptions): Date {
@@ -48,7 +73,7 @@ export function ageFromDob(dob: string, asOf = new Date()): number {
 }
 
 /**
- * Annual-step deterministic projection from current age to 100 (PRD §5).
+ * Annual-step deterministic projection to planning horizon (default age 100).
  * All values held in real (today's £) terms; inflation handled at display time.
  */
 export function runProjection(
@@ -62,9 +87,16 @@ export function runProjection(
   const retirementAge = profile.retirementTargetAge;
   const nmpa = profile.pensionAccessAge;
   const spa = profile.statePensionClaimAge;
-  const horizon = Math.max(HORIZON_AGE - currentAge, 1);
+  const horizonAge = options?.planningHorizonAge ?? DEFAULT_PLANNING_HORIZON_AGE;
+  const horizon = Math.max(horizonAge - currentAge, 1);
 
-  // Initial balances (all in real today's £).
+  const yearCount = horizon + 1;
+  const economics =
+    options?.economicScenario ??
+    economicScenarioFromProfile(profile, startYear, yearCount);
+  const timelineEvents = timelineEventsForProfile(profile);
+  const drawdownStrategy = getDrawdownStrategy(profile.drawdownStrategyId ?? "legacy");
+
   let pension = profile.pensionPot;
   let ssIsa = profile.ssIsaValue;
   let cashIsa = profile.cashIsaValue;
@@ -75,29 +107,30 @@ export function runProjection(
   let primaryValue = profile.primaryValue;
   let primaryBalance = profile.primaryMortgage;
 
-  // BTL portfolios — track balance per property
   const btlBalances = profile.btlProperties.map((p) => p.mortgageBalance);
   const btlValues = profile.btlProperties.map((p) => p.value);
 
-  // Real growth rates (subtract CPI)
-  const rPension = realRate(profile.pensionGrowth, profile.cpi);
-  const rIsa = realRate(profile.isaGrowth, profile.cpi);
-  const rGia = realRate(profile.giaGrowth, profile.cpi);
-  const rCash = realRate(profile.cashRate, profile.cpi);
-  const rCashIsa = realRate(profile.cashIsaRate, profile.cpi);
-  // Property appreciation is applied as stated (real annual growth in today's £) so headline % matches the journey chart in real mode.
   const rPrimary = profile.primaryAppreciation;
 
   const years: ProjectionYear[] = [];
+  let guardrailRefWealth: number | null = null;
 
   for (let i = 0; i <= horizon; i++) {
     const age = currentAge + i;
     const year = startYear + i;
     const retired = age >= retirementAge;
+    const econFallback = economicYearFromProfile(profile, year);
+    const econ = resolveEconomicYear(economics, i, econFallback);
 
-    // Contributions only while accumulating. State pension from SPA. DB from NRA.
+    const rPension = realRate(econ.pensionReturn, econ.inflation);
+    const rIsa = realRate(econ.isaReturn, econ.inflation);
+    const rGia = realRate(econ.giaReturn, econ.inflation);
+    const rCash = realRate(econ.cashReturn, econ.inflation);
+    const rCashIsa = realRate(econ.cashIsaReturn, econ.inflation);
+
+    const employmentGross = retired ? 0 : careerTaxableEmploymentIncome(profile, i);
     const wp = workplaceContribAnnual(
-      profile.grossSalary,
+      employmentGross,
       profile.employeeContribPct,
       profile.employerContribPct,
     );
@@ -115,7 +148,6 @@ export function runProjection(
     const giaMonthlyEff = profile.hasGia ? profile.giaMonthly : 0;
     const annualGiaContrib = retired ? 0 : giaMonthlyEff * 12;
 
-    // Apply growth + contributions (annual step, end-of-year contribution).
     if (i > 0) {
       pension = pension * (1 + rPension) + annualPensionContrib;
       ssIsa = ssIsa * (1 + rIsa) + annualSsIsaContrib;
@@ -124,7 +156,6 @@ export function runProjection(
       gia = giaAnnualGrowth(gia, giaMonthlyEff, rGia);
       cash = compoundAnnual(cash, rCash);
 
-      // Primary property
       primaryValue = primaryValue * (1 + rPrimary);
       const monthsElapsed = i * 12;
       primaryBalance = balanceAfterMonths(
@@ -138,7 +169,6 @@ export function runProjection(
         primaryBalance = Math.max(0, profile.primaryMortgage - totalOverpayMo * 12 * i);
       }
 
-      // BTL
       profile.btlProperties.forEach((p, idx) => {
         btlValues[idx] *= 1 + p.appreciationRate;
         const months = Math.min(i * 12, Math.max(p.mortgageTermYears, 1) * 12);
@@ -153,20 +183,38 @@ export function runProjection(
           );
         }
       });
+    }
 
-      // Inheritance event
-      if (
-        profile.expectedInheritance > 0 &&
-        profile.inheritanceYear &&
-        year === profile.inheritanceYear
-      ) {
-        cash += profile.expectedInheritance;
+    const yearEvents = resolveYearEvents(timelineEvents, year);
+    if (i > 0 || yearEvents.cashDelta !== 0) {
+      cash += yearEvents.cashDelta;
+    }
+
+    for (const sale of yearEvents.propertySales) {
+      if (sale.target === "primary") {
+        const next = applyPrimarySale(
+          { primaryValue, primaryBalance, cashDelta: 0 },
+          sale,
+        );
+        primaryValue = next.primaryValue;
+        primaryBalance = next.primaryBalance;
+        cash += next.cashDelta;
+      } else if (sale.btlIndex != null && sale.btlIndex < profile.btlProperties.length) {
+        const idx = sale.btlIndex;
+        const res = applyBtlSale(
+          profile.btlProperties[idx],
+          btlBalances[idx],
+          btlValues[idx],
+          sale,
+        );
+        btlValues[idx] = res.value;
+        btlBalances[idx] = res.balance;
+        cash += res.cashDelta;
       }
     }
 
-    // Nominal rent escalation vs CPI → real rent path; costs that scale with CPI stay flat in real £.
     const rentScale = Math.pow(
-      (1 + profile.rentalGrowth) / (1 + profile.cpi),
+      (1 + econ.rentalGrowth) / (1 + econ.inflation),
       i,
     );
 
@@ -176,7 +224,7 @@ export function runProjection(
         1,
         p.mortgageTermYears - Math.min(i, p.mortgageTermYears),
       );
-      const cf = btlAnnualCashflow(p, profile.grossSalary, profile.region, {
+      const cf = btlAnnualCashflow(p, employmentGross, profile.region, {
         rentScale,
         mortgageBalance: btlBalances[idx],
         mortgageTermYearsRemaining: termRem,
@@ -184,10 +232,8 @@ export function runProjection(
       });
       btlCashflowNet += cf.netCashflow;
     });
-    if (!retired) cash += btlCashflowNet * 0.0; // accrued in cashflow but not auto-saved
-    // (we keep BTL cashflow as a separate output rather than auto-rolling into cash)
 
-    const rSpLock = realRate(profile.spTripleLockGrowth, profile.cpi);
+    const rSpLock = realRate(econ.spTripleLockGrowth, econ.inflation);
     const yearsClaimingSp = Math.max(0, age - spa);
     const statePensionIncome =
       age >= spa
@@ -195,34 +241,101 @@ export function runProjection(
         : 0;
     const dbIncome = dbAnnualIncomeAtAge(profile, age);
 
-    // Drawdown: in retirement, withdraw from ISA first, then pension, to meet target net income.
+    const careCost = longTermCareCostAtAge(profile, age);
+    let grossNeed =
+      grossSpendingNeedAtAge(profile, age) + yearEvents.expenseDelta + careCost;
+    let essentialNeed = essentialSpendingAtAge(profile, age) + yearEvents.expenseDelta;
+    if (careCost > 0 && retired) {
+      essentialNeed += careCost;
+      grossNeed =
+        essentialNeed + discretionarySpendingAtAge(profile, age) + yearEvents.expenseDelta;
+    }
+    let discretionaryNeed = discretionarySpendingAtAge(profile, age);
+    const eventIncome = yearEvents.incomeDelta;
+    let guardrailMultiplier: number | undefined;
+
     let drawdownIncome = 0;
+    let unmetSpending = 0;
+    let taxPaid = 0;
+    let withdrawals: ProjectionYear["withdrawals"];
+
+    const investableBeforeDrawdown =
+      pension + ssIsa + cashIsa + lisa + gia + cash;
+
+    if (retired && profile.spendingGuardrails?.enabled) {
+      if (guardrailRefWealth === null || guardrailRefWealth <= 0) {
+        guardrailRefWealth = investableBeforeDrawdown;
+      }
+      const ratio =
+        guardrailRefWealth > 0 ? investableBeforeDrawdown / guardrailRefWealth : 1;
+      const adjusted = applySpendingGuardrails(
+        {
+          gross: grossNeed - yearEvents.expenseDelta - careCost,
+          essential: essentialNeed - (careCost > 0 ? careCost : 0),
+          discretionary: discretionaryNeed,
+        },
+        profile.spendingGuardrails,
+        ratio,
+      );
+      guardrailMultiplier = adjusted.multiplier;
+      grossNeed = adjusted.gross + yearEvents.expenseDelta + careCost;
+      essentialNeed = adjusted.essential + (careCost > 0 ? careCost : 0);
+      discretionaryNeed = adjusted.discretionary;
+    }
+
+    let projectedEstateIht: number | undefined;
+    const estatePrefs = profile.estatePlanning;
+    if (estatePrefs?.enabled && age === (estatePrefs.modelAtAge ?? horizonAge)) {
+      const primaryEquityNow = Math.max(0, primaryValue - primaryBalance);
+      const btlEquityNow = profile.btlProperties.reduce(
+        (sum, _, idx) => sum + Math.max(0, btlValues[idx] - btlBalances[idx]),
+        0,
+      );
+      const est = estimateUkIht(
+        {
+          netEstate: investableBeforeDrawdown + primaryEquityNow + btlEquityNow,
+          primaryResidenceValue: primaryEquityNow,
+        },
+        estatePrefs,
+      );
+      projectedEstateIht = est.ihtDue;
+    }
+
     if (retired) {
-      const target = profile.targetRetirementIncome;
-      const passive = statePensionIncome + dbIncome + Math.max(0, btlCashflowNet);
-      const need = Math.max(0, target - passive);
-      // Pull from ISA first (tax-free)
-      const fromIsa = Math.min(ssIsa, need);
-      ssIsa -= fromIsa;
-      let remaining = need - fromIsa;
-      // Then pension (treated as taxable but simplified)
-      if (age >= nmpa && remaining > 0) {
-        const fromPension = Math.min(pension, remaining);
-        pension -= fromPension;
-        remaining -= fromPension;
-      }
-      // Then GIA / cash
-      if (remaining > 0) {
-        const fromGia = Math.min(gia, remaining);
-        gia -= fromGia;
-        remaining -= fromGia;
-      }
-      if (remaining > 0) {
-        const fromCash = Math.min(cash, remaining);
-        cash -= fromCash;
-        remaining -= fromCash;
-      }
-      drawdownIncome = need - remaining;
+      const passive =
+        statePensionIncome +
+        dbIncome +
+        btlCashflowNet +
+        eventIncome;
+      const need = Math.max(0, grossNeed - passive);
+      const alloc = drawdownStrategy.allocate({
+        age,
+        nmpa,
+        region: profile.region,
+        taxYearPack,
+        netNeed: need,
+        otherTaxableIncome: statePensionIncome + dbIncome + Math.max(0, btlCashflowNet),
+        balances: { pension, ssIsa, cashIsa, lisa, gia, cash },
+        strategyId: profile.drawdownStrategyId ?? "legacy",
+      });
+
+      pension -= alloc.fromPensionGross;
+      ssIsa -= alloc.fromSsIsa;
+      cashIsa -= alloc.fromCashIsa;
+      lisa -= alloc.fromLisa;
+      gia -= alloc.fromGia;
+      cash -= alloc.fromCash;
+
+      drawdownIncome = alloc.netDrawdown;
+      unmetSpending = alloc.unmet;
+      taxPaid = alloc.taxOnDrawdown;
+      withdrawals = {
+        fromSsIsa: alloc.fromSsIsa,
+        fromPensionNet: alloc.fromPensionNet,
+        fromGia: alloc.fromGia,
+        fromCash: alloc.fromCash,
+        taxOnDrawdown: alloc.taxOnDrawdown,
+      };
     }
 
     const primaryEquity = Math.max(0, primaryValue - primaryBalance);
@@ -260,11 +373,22 @@ export function runProjection(
         gia: annualGiaContrib,
       },
       btlCashflowNet,
-      taxPaid: 0,
+      taxPaid,
       statePensionIncome,
       dbIncome,
       drawdownIncome,
       retired,
+      grossSpendingNeed: retired ? grossNeed : 0,
+      essentialSpendingNeed: retired ? essentialNeed : 0,
+      discretionarySpendingNeed: retired ? discretionaryNeed : 0,
+      unmetSpending: retired ? unmetSpending : 0,
+      eventIncome,
+      eventExpense: yearEvents.expenseDelta,
+      employmentGross: retired ? undefined : employmentGross,
+      longTermCareCost: careCost > 0 ? careCost : undefined,
+      guardrailSpendingMultiplier: guardrailMultiplier,
+      projectedEstateIht,
+      withdrawals,
     });
   }
 
@@ -276,10 +400,7 @@ export function runProjection(
       nmpa,
       spa,
       horizon: horizon + 1,
+      planningHorizonAge: horizonAge,
     },
   };
-}
-
-function realRate(nominal: number, cpi: number): number {
-  return (1 + nominal) / (1 + cpi) - 1;
 }

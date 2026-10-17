@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { UserProfile } from "@/engine/types";
+import type { HouseholdPrefs, UserProfile } from "@/engine/types";
+import { DEFAULT_MONTE_CARLO_VOLATILITY } from "@/engine/montecarlo/defaults";
 import { makeDefaultProfile } from "@/engine/constants/defaults";
 import { ProfileRepo } from "@/db/repository";
 
@@ -8,6 +9,7 @@ interface ProfileState {
   profile: UserProfile;
   partnerProfile: UserProfile | null;
   dependentCount: number;
+  householdPrefs: HouseholdPrefs;
   onboardingComplete: boolean;
   loaded: boolean;
   load: () => Promise<void>;
@@ -16,6 +18,7 @@ interface ProfileState {
   setPartnerProfile: (next: UserProfile | null) => void;
   set: (next: UserProfile) => void;
   setDependentCount: (n: number) => void;
+  updateHouseholdPrefs: (patch: Partial<HouseholdPrefs>) => void;
   completeOnboarding: () => void;
   reset: () => Promise<void>;
 }
@@ -29,6 +32,7 @@ function scheduleSave(state: () => ProfileState) {
       profile: s.profile,
       partnerProfile: s.partnerProfile,
       dependentCount: s.dependentCount,
+      householdPrefs: s.householdPrefs,
       onboardingComplete: s.onboardingComplete,
     });
   }, 300);
@@ -38,6 +42,14 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   profile: makeDefaultProfile(),
   partnerProfile: null,
   dependentCount: 0,
+  householdPrefs: {
+    planningHorizonAge: 100,
+    monteCarloTrials: 1000,
+    monteCarloSeed: null,
+    successUsesEssentialOnly: false,
+    householdRetirementIncome: null,
+    monteCarloVolatility: DEFAULT_MONTE_CARLO_VOLATILITY,
+  },
   onboardingComplete: false,
   loaded: false,
   load: async () => {
@@ -47,6 +59,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         profile: row.profile,
         partnerProfile: row.partnerProfile,
         dependentCount: row.dependentCount,
+        householdPrefs: row.householdPrefs,
         onboardingComplete: row.onboardingComplete,
         loaded: true,
       });
@@ -75,6 +88,10 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     set({ dependentCount: Math.max(0, Math.round(n)) });
     scheduleSave(get);
   },
+  updateHouseholdPrefs: (patch) => {
+    set((s) => ({ householdPrefs: { ...s.householdPrefs, ...patch } }));
+    scheduleSave(get);
+  },
   completeOnboarding: () => {
     set({ onboardingComplete: true });
     scheduleSave(get);
@@ -85,6 +102,14 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       profile: makeDefaultProfile(),
       partnerProfile: null,
       dependentCount: 0,
+      householdPrefs: {
+        planningHorizonAge: 100,
+        monteCarloTrials: 1000,
+        monteCarloSeed: null,
+        successUsesEssentialOnly: false,
+        householdRetirementIncome: null,
+        monteCarloVolatility: DEFAULT_MONTE_CARLO_VOLATILITY,
+      },
       onboardingComplete: false,
     });
   },

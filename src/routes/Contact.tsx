@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TurnstileField, turnstileRequired } from "@/components/TurnstileField";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,8 @@ export default function Contact() {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [errorText, setErrorText] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const needsTurnstile = turnstileRequired();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,6 +43,10 @@ export default function Contact() {
       setErrorText("Please enter a valid email address.");
       return;
     }
+    if (needsTurnstile && !turnstileToken) {
+      setErrorText("Please complete the verification check.");
+      return;
+    }
     setStatus("sending");
     try {
       const res = await fetch("/api/contact", {
@@ -50,6 +57,7 @@ export default function Contact() {
           name: trimmedName,
           email: trimmedEmail,
           message: trimmedMessage,
+          turnstileToken: turnstileToken ?? undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -143,6 +151,7 @@ export default function Contact() {
                 Thanks — your message was sent.
               </p>
             ) : null}
+            <TurnstileField onToken={setTurnstileToken} />
             <Button type="submit" disabled={status === "sending"}>
               {status === "sending" ? "Sending…" : "Send message"}
             </Button>

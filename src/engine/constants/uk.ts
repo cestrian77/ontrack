@@ -92,3 +92,9 @@ export const DEFAULT_BTL_INTEREST_RELIEF = 0.2; // Section 24 basic-rate credit
 
 // Mortgage overpayment cap (PRD §5.8.3)
 export const DEFAULT_OVERPAYMENT_CAP = 0.1;
+
+/** Illustrative IHT nil-rate band (frozen until policy change). */
+export const DEFAULT_IHT_NIL_RATE_BAND = 325_000;
+export const DEFAULT_IHT_RESIDENCE_NIL_RATE_BAND = 175_000;
+export const DEFAULT_LTC_FROM_AGE = 85;
+export const DEFAULT_LTC_YEARS = 5;
