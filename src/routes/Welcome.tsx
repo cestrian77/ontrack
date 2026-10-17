@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, BarChart3, Flame, Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DataPackControls } from "@/components/data/DataPackControls";
+import { DATA_PACK_DISPLAY_NAME } from "@/lib/dataPack";
 import { useProfileStore } from "@/store/useProfileStore";
 import { taxYearLabelForDate } from "@/engine/constants/uk";
 
@@ -78,17 +80,36 @@ export default function Welcome() {
           />
         </div>
 
-        <div className="mt-12 space-y-1 text-xs text-muted-foreground max-w-xl">
-          <div className="flex items-center gap-2">
-            <Lock className="h-3.5 w-3.5 shrink-0" /> Local-first. No financial
-            data leaves your device.
+        <div className="mt-12 space-y-4 max-w-xl">
+          <div className="rounded-lg border bg-card/50 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Lock className="h-4 w-4 shrink-0 text-primary" />
+              Local-first. No financial data leaves your device.
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your plan saves automatically in this browser. For a portable backup, download or
+              restore an{" "}
+              <Link
+                to="/settings#data-pack"
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                {DATA_PACK_DISPLAY_NAME}
+              </Link>
+              {" "}
+              here or under{" "}
+              <Link to="/settings" className="text-primary underline underline-offset-2">
+                Settings
+              </Link>
+              . PDF reports are read-only snapshots — use the data pack to restore editable inputs.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <DataPackControls size="sm" />
+              <Button size="sm" variant="ghost" asChild>
+                <Link to="/settings#data-pack">All data options</Link>
+              </Button>
+            </div>
           </div>
-          <p>
-            Your plan is saved in this browser (IndexedDB). For a portable backup,
-            use Settings → Export JSON; import that file on this or another browser
-            to restore. PDF reports are snapshots only — use JSON to restore inputs.
-          </p>
-          <p>
+          <p className="text-xs text-muted-foreground">
             <Link to="/help" className="text-primary underline underline-offset-2">
               Help, glossary, and disclaimers
             </Link>

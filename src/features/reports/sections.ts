@@ -36,6 +36,16 @@ export const FULL_REPORT_SECTION_IDS: ReportSectionId[] = REPORT_SECTIONS.map(
   (section) => section.id,
 );
 
+/** Dashboard-style PDF: headline metrics plus the two dashboard charts. */
+export const SIMPLE_REPORT_SECTION_IDS: ReportSectionId[] = [
+  "dashboard-summary",
+  "chart-wealth-journey",
+  "chart-cash-flow",
+];
+
+/** Full analysis PDF: scenarios, insights, assumptions, tax/BTL, glossary. */
+export const ADVANCED_REPORT_SECTION_IDS: ReportSectionId[] = FULL_REPORT_SECTION_IDS;
+
 /** Order for PDF body (after cover). */
 export const REPORT_SECTION_RENDER_ORDER: ReportSectionId[] = [
   "dashboard-summary",

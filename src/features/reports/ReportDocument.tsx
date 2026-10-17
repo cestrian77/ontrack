@@ -158,8 +158,8 @@ export function ReportDocument({
           <Text style={styles.coverMeta}>Analysis tax year: {data.analysisTaxYearLabel}</Text>
           <Text style={styles.coverMeta}>Generated: {generated}</Text>
           <Text style={styles.coverFoot}>
-            This PDF is a read-only snapshot of your modelling inputs and results. It does not include
-            Settings forms or raw JSON. For restoring data elsewhere, export your profile from Settings.
+            This PDF is a read-only snapshot of your modelling inputs and results. To restore or move
+            your editable plan, download your OnTrack data pack from Settings (not this PDF).
           </Text>
         </View>
       </Page>

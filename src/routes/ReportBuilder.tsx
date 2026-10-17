@@ -11,7 +11,13 @@ import { generateInsights } from "@/engine/insights/insights";
 import { buildReportData } from "@/features/reports/buildReportData";
 import { downloadReportPdf } from "@/features/reports/downloadReport";
 import { generateReportChartImages } from "@/features/reports/renderPdfCharts";
-import { FULL_REPORT_SECTION_IDS, REPORT_SECTIONS, type ReportSectionId } from "@/features/reports/sections";
+import {
+  ADVANCED_REPORT_SECTION_IDS,
+  FULL_REPORT_SECTION_IDS,
+  REPORT_SECTIONS,
+  SIMPLE_REPORT_SECTION_IDS,
+  type ReportSectionId,
+} from "@/features/reports/sections";
 import { baseTaxYearPack } from "@/lib/taxYearContext";
 
 export default function ReportBuilder() {
@@ -83,6 +89,19 @@ export default function ReportBuilder() {
     [scenarios, selectedScenarioIds],
   );
 
+  const reportFilename = (sections: ReportSectionId[]) => {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const isSimple =
+      sections.length === SIMPLE_REPORT_SECTION_IDS.length &&
+      SIMPLE_REPORT_SECTION_IDS.every((id) => sections.includes(id));
+    const isAdvanced =
+      sections.length === ADVANCED_REPORT_SECTION_IDS.length &&
+      ADVANCED_REPORT_SECTION_IDS.every((id) => sections.includes(id));
+    if (isSimple) return `ontrack-report-simple-${dateStr}.pdf`;
+    if (isAdvanced) return `ontrack-report-advanced-${dateStr}.pdf`;
+    return `ontrack-report-${dateStr}.pdf`;
+  };
+
   const generate = async (sections: ReportSectionId[]) => {
     if (sections.length === 0) return;
     setIsGenerating(true);
@@ -103,16 +122,10 @@ export default function ReportBuilder() {
       });
       const hasChart =
         chartImages.wealthJourney !== undefined || chartImages.cashflow !== undefined;
-      const dateStr = new Date().toISOString().slice(0, 10);
-      const isFullPersonalView =
-        sections.length === FULL_REPORT_SECTION_IDS.length &&
-        FULL_REPORT_SECTION_IDS.every((id) => sections.includes(id));
       await downloadReportPdf({
         data: { ...reportData, ...(hasChart ? { chartImages } : {}) },
         sections,
-        filename: isFullPersonalView
-          ? `ontrack-personal-view-${dateStr}.pdf`
-          : `ontrack-report-${dateStr}.pdf`,
+        filename: reportFilename(sections),
       });
     } finally {
       setIsGenerating(false);
@@ -123,10 +136,32 @@ export default function ReportBuilder() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>PDF report builder</CardTitle>
+          <CardTitle>PDF reports</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Export a branded On-Track Personal View (dashboard, FIRE, scenarios, tax &amp; BTL,
-            charts, glossary). Settings forms and raw JSON are not included.
+            Read-only snapshots for sharing or printing. To save editable inputs, use your OnTrack
+            data pack in Settings — PDFs cannot restore your plan.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button onClick={() => void generate(SIMPLE_REPORT_SECTION_IDS)} disabled={isGenerating}>
+            <FileText className="h-4 w-4" /> Simple report (dashboard)
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => void generate(ADVANCED_REPORT_SECTION_IDS)}
+            disabled={isGenerating}
+          >
+            <FileText className="h-4 w-4" /> Advanced report (full analysis)
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Custom PDF report</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Pick sections for a tailored export. Simple and advanced presets above match dashboard
+            view and the full Personal View (FIRE, scenarios, insights, tax &amp; BTL, glossary).
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -164,18 +199,15 @@ export default function ReportBuilder() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Generate</CardTitle>
+          <CardTitle>Generate custom selection</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button onClick={() => void generate(FULL_REPORT_SECTION_IDS)} disabled={isGenerating}>
-            <FileText className="h-4 w-4" /> Personal View (full)
-          </Button>
           <Button
             variant="outline"
             onClick={() => void generate(selectedSections)}
             disabled={isGenerating || selectedSections.length === 0}
           >
-            <FileText className="h-4 w-4" /> Generate custom PDF
+            <FileText className="h-4 w-4" /> Download custom PDF
           </Button>
           <Button variant="ghost" asChild>
             <Link to="/settings">Back to settings</Link>

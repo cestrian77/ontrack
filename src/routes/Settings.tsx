@@ -1,5 +1,5 @@
-import { useMemo, useRef } from "react";
-import { Download, Upload, Trash2, FileText } from "lucide-react";
+import { useMemo } from "react";
+import { Trash2, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, NumberInput, PercentInput } from "@/components/forms/Field";
@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { exportAll, importAll, MAX_IMPORT_BYTES } from "@/db/repository";
+import { DataPackControls } from "@/components/data/DataPackControls";
+import { DATA_PACK_DISPLAY_NAME } from "@/lib/dataPack";
 import { PlanningLongevityFields } from "@/components/settings/PlanningLongevityFields";
 import { Link } from "react-router-dom";
 import { runProjection } from "@/engine/project/runProjection";
@@ -38,8 +39,6 @@ export default function Settings() {
   const setAnalysisViewMode = useUiStore((s) => s.setAnalysisViewMode);
   const update = useProfileStore((s) => s.update);
   const reset = useProfileStore((s) => s.reset);
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const basePack = useMemo(
     () => baseTaxYearPack(analysisTaxYearLabel),
     [analysisTaxYearLabel],
@@ -67,38 +66,6 @@ export default function Settings() {
         : null,
     [partnerProfile, partnerProjectionPreview, basePack],
   );
-
-  const onExport = async () => {
-    const json = await exportAll();
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `ontrack-export-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const onImport = async (file: File) => {
-    if (file.size > MAX_IMPORT_BYTES) {
-      alert(`File is too large (max ${MAX_IMPORT_BYTES / (1024 * 1024)} MB).`);
-      return;
-    }
-    if (
-      !confirm(
-        "Import will replace all local data on this device (profile, scenarios, insights). Continue?",
-      )
-    ) {
-      return;
-    }
-    try {
-      const text = await file.text();
-      await importAll(text);
-      location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Import failed.");
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -610,8 +577,8 @@ export default function Settings() {
         <CardHeader>
           <CardTitle>Reports</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Generate a complete PDF report or build a custom report from selected sections.
-            To keep your inputs, use Data → Export JSON below.
+            Simple (dashboard) and advanced (full analysis) PDFs, or pick your own sections.
+            To keep editable inputs, download your {DATA_PACK_DISPLAY_NAME} below.
           </p>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
@@ -623,34 +590,18 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="data-pack">
         <CardHeader>
-          <CardTitle>Data</CardTitle>
+          <CardTitle>{DATA_PACK_DISPLAY_NAME}</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Stored on this device in your browser (IndexedDB). Download a{" "}
-            <span className="font-medium text-foreground">.json</span> backup
-            (profile, scenarios, dismissed insights) to restore elsewhere or
-            after clearing site data. PDF exports are read-only summaries, not
-            a restore format.
+            Your plan is saved automatically on this device (IndexedDB). Download an{" "}
+            <span className="font-medium text-foreground">{DATA_PACK_DISPLAY_NAME}</span> to back up
+            or move to another browser — profile, partner, scenarios, and dismissed insights.
+            PDF reports are read-only snapshots; use the data pack to restore editable inputs.
           </p>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={onExport}>
-            <Download className="h-4 w-4" /> Export JSON
-          </Button>
-          <input
-            type="file"
-            accept="application/json"
-            ref={fileRef}
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onImport(f);
-            }}
-          />
-          <Button variant="outline" onClick={() => fileRef.current?.click()}>
-            <Upload className="h-4 w-4" /> Import JSON
-          </Button>
+          <DataPackControls />
           <Button
             variant="destructive"
             onClick={async () => {

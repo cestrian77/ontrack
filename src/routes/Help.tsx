@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DISCLAIMER_FULL } from "@/lib/legalCopy";
+import { DATA_PACK_DISPLAY_NAME } from "@/lib/dataPack";
 import { GLOSSARY_ENTRIES } from "@/lib/glossaryTerms";
 
 export default function Help() {
@@ -33,6 +34,26 @@ export default function Help() {
           </p>
           <Button variant="outline" size="sm" asChild>
             <Link to="/settings">Tax year and global assumptions</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card id="data-pack">
+        <CardHeader>
+          <CardTitle>{DATA_PACK_DISPLAY_NAME}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            OnTrack saves your plan in this browser automatically. An{" "}
+            <strong className="text-foreground">{DATA_PACK_DISPLAY_NAME}</strong> is a portable
+            backup file (JSON on disk) with your profiles, scenarios, and dismissed insights.
+          </p>
+          <p>
+            Download or restore it from the home page or Settings → {DATA_PACK_DISPLAY_NAME}. PDF
+            reports are read-only; use the data pack to continue editing elsewhere.
+          </p>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/settings#data-pack">Open data pack settings</Link>
           </Button>
         </CardContent>
       </Card>

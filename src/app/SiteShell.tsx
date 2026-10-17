@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 import { DISCLAIMER_SHORT } from "@/lib/legalCopy";
+import { DATA_PACK_DISPLAY_NAME } from "@/lib/dataPack";
 import { useProfileStore } from "@/store/useProfileStore";
 
 export function SiteShell() {
@@ -16,7 +17,7 @@ export function SiteShell() {
   }, [loaded, load]);
 
   return (
-    <div className="min-h-full flex flex-col bg-background [--site-header-height:3.5rem] [--site-footer-height:5.75rem]">
+    <div className="min-h-full flex flex-col bg-background [--site-header-height:3.5rem] [--site-footer-height:7.25rem]">
       <header className="fixed top-0 inset-x-0 z-40 h-14 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <div className="container h-full px-3 sm:px-4 flex items-center gap-3 min-w-0">
           <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="OnTrack home">
@@ -29,6 +30,7 @@ export function SiteShell() {
           >
             <SiteNavLink to="/dashboard">Dashboard</SiteNavLink>
             <SiteNavLink to={myInfoTo}>My information</SiteNavLink>
+            <SiteNavLink to="/settings">Settings</SiteNavLink>
             <SiteNavLink to="/help#glossary">Glossary</SiteNavLink>
             <SiteNavLink to="/help">Help</SiteNavLink>
             <SiteNavLink to="/contact">Contact</SiteNavLink>
@@ -44,12 +46,24 @@ export function SiteShell() {
 
       <footer className="fixed bottom-0 inset-x-0 z-20 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85 text-[11px] sm:text-xs text-muted-foreground pb-[max(0px,env(safe-area-inset-bottom))]">
         <div className="container px-3 sm:px-4 py-2 sm:py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-          <p className="leading-snug sm:max-w-xl shrink-0">
-            {DISCLAIMER_SHORT}{" "}
-            <Link to="/help#disclaimer" className="text-primary underline underline-offset-2 whitespace-nowrap">
-              Full disclaimer
-            </Link>
-          </p>
+          <div className="leading-snug sm:max-w-xl shrink-0 space-y-1">
+            <p>
+              {DISCLAIMER_SHORT}{" "}
+              <Link to="/help#disclaimer" className="text-primary underline underline-offset-2 whitespace-nowrap">
+                Full disclaimer
+              </Link>
+            </p>
+            <p>
+              Local save included — back up with an{" "}
+              <Link
+                to="/settings#data-pack"
+                className="text-primary underline underline-offset-2 whitespace-nowrap"
+              >
+                {DATA_PACK_DISPLAY_NAME}
+              </Link>
+              .
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:justify-end shrink-0">
             <Link to="/" className="hover:text-foreground transition-colors">
               Home
