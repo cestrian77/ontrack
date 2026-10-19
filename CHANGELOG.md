@@ -1,5 +1,7 @@
 # Changelog
 
+User-facing summaries also appear in the app at `/whats-new` (`src/lib/releaseNotes.ts`).
+
 ## 1.1.1 — 2026-03-21
 
 ### Added

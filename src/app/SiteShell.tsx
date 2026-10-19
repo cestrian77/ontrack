@@ -71,13 +71,20 @@ export function SiteShell() {
             <Link to="/help" className="hover:text-foreground transition-colors">
               Help
             </Link>
+            <Link to="/whats-new" className="hover:text-foreground transition-colors">
+              What&apos;s new
+            </Link>
             <Link to="/contact" className="hover:text-foreground transition-colors">
               Contact
             </Link>
             <span className="h-3 w-px bg-border hidden sm:block" aria-hidden />
-            <span className="tabular-nums opacity-80">
+            <Link
+              to="/whats-new"
+              className="tabular-nums opacity-80 hover:text-foreground transition-colors"
+              title="Release notes"
+            >
               v{__APP_VERSION__} · {__APP_COMMIT__} · {__APP_BUILD_DATE__}
-            </span>
+            </Link>
           </div>
         </div>
       </footer>

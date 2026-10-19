@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { DISCLAIMER_FULL } from "@/lib/legalCopy";
 import { DATA_PACK_DISPLAY_NAME } from "@/lib/dataPack";
 import { GLOSSARY_ENTRIES } from "@/lib/glossaryTerms";
+import { latestReleaseHighlights, latestReleaseNote } from "@/lib/releaseNotes";
 
 export default function Help() {
+  const latest = latestReleaseNote();
+  const highlights = latestReleaseHighlights(3);
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
@@ -14,6 +18,27 @@ export default function Help() {
           How OnTrack works, key terms, and what the numbers mean.
         </p>
       </div>
+
+      <Card id="whats-new" className="scroll-mt-[calc(var(--site-header-height)+0.75rem)]">
+        <CardHeader>
+          <CardTitle>What&apos;s new</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Version {latest.version}</strong>
+            {latest.date ? ` (${latest.date})` : ""} — recent changes that may affect your
+            projections or settings.
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            {highlights.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/whats-new">All release notes</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

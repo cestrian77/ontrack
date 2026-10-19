@@ -22,6 +22,7 @@ import Insights from "@/routes/Insights";
 import Settings from "@/routes/Settings";
 import Stress from "@/routes/Stress";
 import Help from "@/routes/Help";
+import WhatsNew from "@/routes/WhatsNew";
 import ReportBuilder from "@/routes/ReportBuilder";
 
 export const router = createBrowserRouter([
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Welcome /> },
       { path: "contact", element: <Contact /> },
+      { path: "whats-new", element: <WhatsNew /> },
       {
         path: "onboard",
         element: <OnboardingLayout />,
