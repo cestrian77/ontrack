@@ -24,6 +24,11 @@ export interface TaxYearPack {
   // --- Income tax ---
   englandWalesIncomeBands: TaxBand[];
   scotlandIncomeBands: TaxBand[];
+  /** Rental / property business income (matches general rates until 2027/28). */
+  englandWalesPropertyIncomeBands: TaxBand[];
+  scotlandPropertyIncomeBands: TaxBand[];
+  /** Section 24 finance-cost tax credit rate (20% until 2027/28, then 22%). */
+  btlSection24CreditRate: number;
   personalAllowance: number;
   paTaperStart: number;
   paTaperEnd: number;
@@ -38,6 +43,8 @@ export interface TaxYearPack {
   lisaAnnualAllowance: number;
   lisaBonusRate: number;
   lisaMaxAgeContrib: number;
+  /** Whole-year age at which you can no longer open a new LISA (must be under 40). */
+  lisaMaxAgeOpen: number;
   lisaAccessAge: number;
 
   // --- Pensions ---

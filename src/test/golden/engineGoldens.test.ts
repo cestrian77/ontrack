@@ -19,6 +19,7 @@ function opts() {
   return {
     asOfDate: AS_OF,
     taxYearPack: taxYearPackByLabel(TAX_LABEL),
+    freezeTaxYearPack: true,
   };
 }
 

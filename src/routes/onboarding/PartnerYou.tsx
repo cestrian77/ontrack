@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useProfileStore } from "@/store/useProfileStore";
 import { Field, NumberInput } from "@/components/forms/Field";
+import { MoneyPeriodInput } from "@/components/forms/MoneyPeriodInput";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -62,14 +63,13 @@ export default function OnboardingPartnerYou() {
         <Field
           label="Target retirement income"
           hint="Today's £, net of tax — their share of household need."
-          example="£28,000 p.a."
+          example="£28,000 per year"
         >
-          <NumberInput
-            prefix="£"
-            value={p.targetRetirementIncome}
-            onChange={(n) => updatePartner({ targetRetirementIncome: n })}
-            min={5_000}
-            max={500_000}
+          <MoneyPeriodInput
+            annualValue={p.targetRetirementIncome}
+            onAnnualChange={(n) => updatePartner({ targetRetirementIncome: n })}
+            minAnnual={5_000}
+            maxAnnual={500_000}
           />
         </Field>
         <Field label="Region" hint="Scottish tax bands if applicable.">
@@ -106,33 +106,33 @@ export default function OnboardingPartnerYou() {
           </Select>
         </Field>
         <Field label="Gross salary" hint="Pre-tax employment income.">
-          <NumberInput
-            prefix="£"
-            value={p.grossSalary}
-            onChange={(n) => updatePartner({ grossSalary: n })}
-            min={0}
-            max={1_000_000}
+          <MoneyPeriodInput
+            annualValue={p.grossSalary}
+            onAnnualChange={(n) => updatePartner({ grossSalary: n })}
+            minAnnual={0}
+            maxAnnual={1_000_000}
           />
         </Field>
         <Field label="Bonus / variable pay" hint="Optional.">
-          <NumberInput
-            prefix="£"
-            value={p.bonus}
-            onChange={(n) => updatePartner({ bonus: n })}
-            min={0}
-            max={500_000}
+          <MoneyPeriodInput
+            annualValue={p.bonus}
+            onAnnualChange={(n) => updatePartner({ bonus: n })}
+            minAnnual={0}
+            maxAnnual={500_000}
           />
         </Field>
         <Field
-          label="Other income (monthly)"
+          label="Other income"
           hint="Taxable add-ons while employed."
+          example="£0 per month"
         >
-          <NumberInput
-            prefix="£"
-            suffix="/mo"
-            value={p.otherIncomeMonthly}
-            onChange={(n) => updatePartner({ otherIncomeMonthly: n })}
-            min={0}
+          <MoneyPeriodInput
+            annualValue={p.otherIncomeMonthly * 12}
+            onAnnualChange={(a) =>
+              updatePartner({ otherIncomeMonthly: a / 12 })
+            }
+            defaultPeriod="month"
+            minAnnual={0}
           />
         </Field>
       </div>

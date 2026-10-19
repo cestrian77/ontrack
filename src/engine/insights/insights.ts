@@ -5,6 +5,7 @@ import { isaBridge } from "@/engine/project/isaBridge";
 import { overpaymentSummary } from "@/engine/property/mortgage";
 import { ageFromDob } from "@/engine/project/runProjection";
 import { btlAnnualCashflow } from "@/engine/btl/cashflow";
+import { buildTaxYearOutlook } from "@/lib/taxYearOutlook";
 import { marginalIncomeRate } from "@/engine/tax/incomeTax";
 
 const fmt = (n: number) =>
@@ -100,6 +101,20 @@ const fireProgressRule: Rule = ({ fire }) => {
   };
 };
 
+/** HMRC: must be 18–39 to open a LISA; model uses whole-year age vs this upper bound. */
+const LISA_MIN_AGE_OPEN = 18;
+
+function lisaBonusInsightEligible(profile: UserProfile, taxYearPack: TaxYearPack): boolean {
+  if (!profile.hasLisa) return false;
+  const age = ageFromDob(profile.dateOfBirth);
+  if (age < LISA_MIN_AGE_OPEN) return false;
+  if (age > taxYearPack.lisaMaxAgeContrib) return false;
+  const holdsLisa = profile.lisaValue > 0 || profile.lisaMonthly > 0;
+  if (!holdsLisa) return false;
+  if (profile.lisaValue <= 0 && age >= taxYearPack.lisaMaxAgeOpen) return false;
+  return true;
+}
+
 const isaAllowanceRule: Rule = ({ profile, taxYearPack }) => {
   const lisaAnnual = profile.hasLisa ? profile.lisaMonthly * 12 : 0;
   const annual = profile.ssIsaMonthly * 12 + lisaAnnual;
@@ -109,17 +124,15 @@ const isaAllowanceRule: Rule = ({ profile, taxYearPack }) => {
     id: "isa_allowance_remaining",
     category: "tax",
     severity: "info",
-    title: "Unused ISA allowance",
-    body: `You have ${fmt(remaining)} of unused ISA allowance this tax year. This resets on 5 April.`,
+    title: "Potential unused ISA allowance",
+    body: `Based on the regular contributions in your plan, you may have up to ${fmt(remaining)} of ISA allowance left this tax year. That excludes any ad hoc or discretionary contributions you have made but not entered here. Allowance resets on 5 April.`,
     impactScore: 45,
     actionRoute: "/tax",
   };
 };
 
 const lisaUnused: Rule = ({ profile, taxYearPack }) => {
-  if (!profile.hasLisa) return null;
-  const age = ageFromDob(profile.dateOfBirth);
-  if (age > taxYearPack.lisaMaxAgeContrib) return null;
+  if (!lisaBonusInsightEligible(profile, taxYearPack)) return null;
   const annual = profile.lisaMonthly * 12;
   if (annual >= taxYearPack.lisaAnnualAllowance) return null;
   const remaining = taxYearPack.lisaAnnualAllowance - annual;
@@ -201,6 +214,21 @@ const btlNegativeCashflow: Rule = ({ profile, taxYearPack }) => {
     title: "BTL portfolio is cashflow negative",
     body: `Your BTL cashflow is negative by ${fmt(-totalCf)}/year after costs and tax. Review costs or rental assumptions.`,
     impactScore: 88,
+    actionRoute: "/property",
+  };
+};
+
+const btlPropertyTaxShift: Rule = ({ profile, taxYearPack, projection }) => {
+  if (profile.btlProperties.length === 0) return null;
+  const outlook = buildTaxYearOutlook(profile, taxYearPack, projection);
+  if (!outlook?.btlAnnualDelta || outlook.btlAnnualDelta >= 0) return null;
+  return {
+    id: "btl_property_tax_2027",
+    category: "tax",
+    severity: "info",
+    title: `BTL tax rises in ${outlook.nextPackLabel}`,
+    body: `Legislated property income rates and Section 24 credit change from April 2027. At today's rents, your portfolio net cashflow is about ${fmt(-outlook.btlAnnualDelta)}/year lower under ${outlook.nextPackLabel} than ${taxYearPack.label}. Projections step rules by calendar year.`,
+    impactScore: 72,
     actionRoute: "/property",
   };
 };
@@ -296,6 +324,7 @@ const RULES: Rule[] = [
   taperRule,
   overpayMortgage,
   btlNegativeCashflow,
+  btlPropertyTaxShift,
   higherRateRelief,
   longTermCareRule,
   estateIhtRule,

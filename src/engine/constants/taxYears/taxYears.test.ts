@@ -22,6 +22,7 @@ describe("UK tax-year resolver", () => {
     expect(resolveTaxYearPack(new Date("2024-06-01")).label).toBe("2024/25");
     expect(resolveTaxYearPack(new Date("2025-06-01")).label).toBe("2025/26");
     expect(resolveTaxYearPack(new Date("2026-06-01")).label).toBe("2026/27");
+    expect(resolveTaxYearPack(new Date("2027-06-01")).label).toBe("2027/28");
   });
 
   it("falls back to the most recent registered pack for future dates", () => {
@@ -53,7 +54,18 @@ describe("UK tax-year resolver", () => {
       expect(p.isaAnnualAllowance).toBeGreaterThan(0);
       expect(p.pensionAnnualAllowance).toBeGreaterThan(0);
       expect(p.statePensionAnnualFull).toBeGreaterThan(0);
+      expect(p.btlSection24CreditRate).toBeGreaterThan(0);
+      expect(p.englandWalesPropertyIncomeBands.length).toBeGreaterThan(0);
     }
+  });
+
+  it("2027/28 uses higher property rates and S24 credit", () => {
+    const p = taxYearPackByLabel("2027/28");
+    const prev = taxYearPackByLabel("2026/27");
+    expect(p.btlSection24CreditRate).toBe(0.22);
+    expect(prev.btlSection24CreditRate).toBe(0.2);
+    expect(p.englandWalesPropertyIncomeBands[1].rate).toBe(0.22);
+    expect(prev.englandWalesPropertyIncomeBands[1].rate).toBe(0.2);
   });
 });
 

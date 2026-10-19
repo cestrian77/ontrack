@@ -1,12 +1,14 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProfileStore } from "@/store/useProfileStore";
 import { useProjection } from "@/lib/hooks";
 import { gbp, pct } from "@/lib/utils";
+import { gbpPerYear } from "@/lib/moneyPeriod";
 import { ageFromDob } from "@/engine/project/runProjection";
+import { RETIREMENT_TARGET_FOOTNOTE } from "@/lib/retirementTargetExplain";
 
 type ReviewSection = { title: string; rows: [string, string][]; edit: string };
 
@@ -33,8 +35,11 @@ export default function OnboardingReview() {
           ["Current age", `${age}`],
           ["Region", profile.region === "scotland" ? "Scotland" : "England / Wales"],
           ["Retirement target age", `${profile.retirementTargetAge}`],
-          ["Target retirement income", gbp(profile.targetRetirementIncome)],
-          ["Gross salary", gbp(profile.grossSalary)],
+          ["Target retirement income", gbpPerYear(profile.targetRetirementIncome)],
+          ["Gross salary", gbpPerYear(profile.grossSalary)],
+          ...(profile.bonus > 0
+            ? ([["Bonus / variable pay", gbpPerYear(profile.bonus)]] as [string, string][])
+            : []),
         ],
       },
       {
@@ -47,7 +52,10 @@ export default function OnboardingReview() {
           ["Access age", `${profile.pensionAccessAge}`],
           ...((profile.hasDB
             ? ([
-                ["DB income", `${gbp(profile.dbAnnualIncome)} from age ${profile.dbNRA}`],
+                [
+                  "DB income",
+                  `${gbpPerYear(profile.dbAnnualIncome)} from age ${profile.dbNRA}`,
+                ],
               ] as [string, string][])
             : ([] as [string, string][]))),
         ],
@@ -95,8 +103,11 @@ export default function OnboardingReview() {
           ["Current age", `${pAge}`],
           ["Region", partnerProfile.region === "scotland" ? "Scotland" : "England / Wales"],
           ["Retirement target age", `${partnerProfile.retirementTargetAge}`],
-          ["Target retirement income", gbp(partnerProfile.targetRetirementIncome)],
-          ["Gross salary", gbp(partnerProfile.grossSalary)],
+          ["Target retirement income", gbpPerYear(partnerProfile.targetRetirementIncome)],
+          ["Gross salary", gbpPerYear(partnerProfile.grossSalary)],
+          ...(partnerProfile.bonus > 0
+            ? ([["Bonus / variable pay", gbpPerYear(partnerProfile.bonus)]] as [string, string][])
+            : []),
         ],
       },
       {
@@ -114,7 +125,7 @@ export default function OnboardingReview() {
             ? ([
                 [
                   "DB income",
-                  `${gbp(partnerProfile.dbAnnualIncome)} from age ${partnerProfile.dbNRA}`,
+                  `${gbpPerYear(partnerProfile.dbAnnualIncome)} from age ${partnerProfile.dbNRA}`,
                 ],
               ] as [string, string][])
             : ([] as [string, string][]))),
@@ -186,6 +197,16 @@ export default function OnboardingReview() {
             </div>
           ))}
         </div>
+
+        <p className="text-xs text-muted-foreground rounded-md border p-3 bg-muted/30">
+          {RETIREMENT_TARGET_FOOTNOTE}{" "}
+          <Link
+            className="text-primary underline underline-offset-2"
+            to="/help#retirement-income-target"
+          >
+            Read more
+          </Link>
+        </p>
 
         <div className="rounded-md border bg-secondary/30 p-5">
           <div className="flex items-start gap-3">

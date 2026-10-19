@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Camera } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
 import { gbp } from "@/lib/utils";
 import { InsightRepo } from "@/db/repository";
 import { HOUSEHOLD_VIEW_FOOTNOTE } from "@/engine/household/semantics";
+import { RETIREMENT_TARGET_FOOTNOTE } from "@/lib/retirementTargetExplain";
 import { AnalysisViewSwitch } from "@/components/AnalysisViewSwitch";
 import {
   captureDashboardPng,
@@ -138,6 +140,15 @@ export default function Dashboard() {
           {HOUSEHOLD_VIEW_FOOTNOTE}
         </p>
       )}
+      <p className="text-xs text-muted-foreground border border-border rounded-md p-3 bg-muted/30">
+        {RETIREMENT_TARGET_FOOTNOTE}{" "}
+        <Link
+          className="text-primary underline underline-offset-2"
+          to="/help#retirement-income-target"
+        >
+          Read more
+        </Link>
+      </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat label="Net worth today" value={gbp(projection.years[0]?.totalNetWorth ?? 0)} hint={NET_WORTH_TOTAL_TOOLTIP} />
         <Stat
@@ -278,7 +289,11 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         <div className="lg:col-span-2">
-          <TaxDashboard profile={analysisProfile} taxYearPack={taxYearPack} />
+          <TaxDashboard
+            profile={analysisProfile}
+            taxYearPack={taxYearPack}
+            projection={projection}
+          />
         </div>
       </div>
       </div>

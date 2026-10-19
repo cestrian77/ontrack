@@ -1,18 +1,45 @@
 import type { TaxYearPack } from "@/engine/constants/taxYears";
-import type { UserProfile } from "@/engine/types";
+import type { Projection, UserProfile } from "@/engine/types";
 import { gbp } from "@/lib/utils";
 import { buildTaxDashboardReport } from "@/lib/taxDashboardReport";
+import { buildTaxYearOutlook } from "@/lib/taxYearOutlook";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Props {
   profile: UserProfile;
   taxYearPack: TaxYearPack;
+  projection?: Projection;
 }
 
-export function TaxDashboard({ profile, taxYearPack }: Props) {
+export function TaxDashboard({ profile, taxYearPack, projection }: Props) {
   const model = buildTaxDashboardReport(profile, taxYearPack);
+  const outlook = buildTaxYearOutlook(profile, taxYearPack, projection);
 
   return (
+    <div className="space-y-4">
+      {outlook && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Upcoming tax year ({outlook.nextPackLabel})</CardTitle>
+            <p className="text-xs text-muted-foreground">{outlook.headline}</p>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {outlook.rows.map((r) => (
+              <Row
+                key={r.label}
+                label={r.label}
+                value={r.value}
+                muted={r.emphasis === "muted"}
+                negative={r.emphasis === "negative"}
+              />
+            ))}
+            <p className="text-xs text-muted-foreground pt-1">
+              Projections step tax rules by calendar year unless you pin a ruleset in Settings.
+              Personal allowance ordering for property is not modelled yet.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     <div className="grid gap-4 lg:grid-cols-3">
       <Card>
         <CardHeader className="pb-2">
@@ -60,6 +87,7 @@ export function TaxDashboard({ profile, taxYearPack }: Props) {
         </CardContent>
       </Card>
     </div>
+    </div>
   );
 }
 
@@ -87,12 +115,14 @@ function Row({
   muted,
   bold,
   positive,
+  negative,
 }: {
   label: string;
   value: string;
   muted?: boolean;
   bold?: boolean;
   positive?: boolean;
+  negative?: boolean;
 }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
@@ -102,6 +132,7 @@ function Row({
           "tabular-nums",
           bold ? "font-semibold" : "",
           positive ? "text-success" : "",
+          negative ? "text-destructive" : "",
           muted && !bold ? "text-foreground/80" : "",
         ].join(" ")}
       >

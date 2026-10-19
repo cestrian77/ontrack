@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import type { HouseholdPrefs, UserProfile } from "@/engine/types";
+import type { HouseholdBudget, HouseholdPrefs, UserProfile } from "@/engine/types";
 import { DEFAULT_MONTE_CARLO_VOLATILITY } from "@/engine/montecarlo/defaults";
 import { makeDefaultProfile } from "@/engine/constants/defaults";
+import { emptyHouseholdBudget } from "@/engine/household/budget/compile";
 import { ProfileRepo } from "@/db/repository";
 
 interface ProfileState {
@@ -10,6 +11,7 @@ interface ProfileState {
   partnerProfile: UserProfile | null;
   dependentCount: number;
   householdPrefs: HouseholdPrefs;
+  householdBudget: HouseholdBudget;
   onboardingComplete: boolean;
   loaded: boolean;
   load: () => Promise<void>;
@@ -19,6 +21,8 @@ interface ProfileState {
   set: (next: UserProfile) => void;
   setDependentCount: (n: number) => void;
   updateHouseholdPrefs: (patch: Partial<HouseholdPrefs>) => void;
+  setHouseholdBudget: (next: HouseholdBudget) => void;
+  updateHouseholdBudget: (patch: Partial<HouseholdBudget>) => void;
   completeOnboarding: () => void;
   reset: () => Promise<void>;
 }
@@ -33,6 +37,7 @@ function scheduleSave(state: () => ProfileState) {
       partnerProfile: s.partnerProfile,
       dependentCount: s.dependentCount,
       householdPrefs: s.householdPrefs,
+      householdBudget: s.householdBudget,
       onboardingComplete: s.onboardingComplete,
     });
   }, 300);
@@ -50,6 +55,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     householdRetirementIncome: null,
     monteCarloVolatility: DEFAULT_MONTE_CARLO_VOLATILITY,
   },
+  householdBudget: emptyHouseholdBudget(),
   onboardingComplete: false,
   loaded: false,
   load: async () => {
@@ -60,6 +66,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         partnerProfile: row.partnerProfile,
         dependentCount: row.dependentCount,
         householdPrefs: row.householdPrefs,
+        householdBudget: row.householdBudget,
         onboardingComplete: row.onboardingComplete,
         loaded: true,
       });
@@ -92,6 +99,14 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     set((s) => ({ householdPrefs: { ...s.householdPrefs, ...patch } }));
     scheduleSave(get);
   },
+  setHouseholdBudget: (next) => {
+    set({ householdBudget: next });
+    scheduleSave(get);
+  },
+  updateHouseholdBudget: (patch) => {
+    set((s) => ({ householdBudget: { ...s.householdBudget, ...patch } }));
+    scheduleSave(get);
+  },
   completeOnboarding: () => {
     set({ onboardingComplete: true });
     scheduleSave(get);
@@ -110,6 +125,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         householdRetirementIncome: null,
         monteCarloVolatility: DEFAULT_MONTE_CARLO_VOLATILITY,
       },
+      householdBudget: emptyHouseholdBudget(),
       onboardingComplete: false,
     });
   },

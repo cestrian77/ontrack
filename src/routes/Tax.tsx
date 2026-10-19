@@ -22,7 +22,7 @@ export default function Tax() {
   const setActivePersonId = useUiStore((s) => s.setActivePersonId);
   const profile =
     activePersonId === "partner" && partner ? partner : primary;
-  const { taxYearPack } = useProjection(profile);
+  const { taxYearPack, projection } = useProjection(profile);
   const sample100 = pensionNetCost(100, profile.grossSalary, profile.region, taxYearPack);
   const sample1000 = pensionNetCost(1000, profile.grossSalary, profile.region, taxYearPack);
 
@@ -46,7 +46,7 @@ export default function Tax() {
           </Select>
         </Field>
       )}
-      <TaxDashboard profile={profile} taxYearPack={taxYearPack} />
+      <TaxDashboard profile={profile} taxYearPack={taxYearPack} projection={projection} />
 
       <Card>
         <CardHeader>

@@ -62,7 +62,7 @@ export default function OnboardingBTL() {
   return (
     <StepShell
       title="Buy-to-let properties"
-      description="Add up to 10 BTLs. We model Section 24 mortgage interest restriction."
+      description="Add up to 10 BTLs. We model Section 24 and property income tax rates (including 22/42/47% from April 2027 in projections)."
       prev="/onboard/property"
       next={
         partnerOnboarding ? "/onboard/partner-you" : "/onboard/review"

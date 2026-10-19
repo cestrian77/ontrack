@@ -43,4 +43,18 @@ describe("runProjection BTL cashflow", () => {
     const b = proj.years[12]!.btlCashflowNet;
     expect(b).toBeCloseTo(a, 5);
   });
+
+  it("steps to 2027/28 property tax when calendar year crosses April 2027", () => {
+    const p = makeDefaultProfile();
+    p.btlProperties = [sampleBtl];
+    p.salaryGrowth = 0;
+    p.cpi = 0.025;
+    p.rentalGrowth = 0.025;
+    const proj = runProjection(p, { asOfDate: "2026-05-10" });
+    const y2026 = proj.years.find((y) => y.year === 2026);
+    const y2027 = proj.years.find((y) => y.year === 2027);
+    expect(y2026?.taxYearLabel).toBe("2026/27");
+    expect(y2027?.taxYearLabel).toBe("2027/28");
+    expect(y2027!.btlCashflowNet).toBeLessThan(y2026!.btlCashflowNet);
+  });
 });

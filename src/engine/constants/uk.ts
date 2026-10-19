@@ -88,7 +88,8 @@ export const DEFAULT_BTL_VOID_RATE = 0.05;
 export const DEFAULT_BTL_AGENT_FEE = 0.1;
 export const DEFAULT_BTL_INSURANCE = 1_000;
 export const DEFAULT_BTL_MAINTENANCE_PCT = 0.01;
-export const DEFAULT_BTL_INTEREST_RELIEF = 0.2; // Section 24 basic-rate credit
+/** Legacy default; BTL cashflow uses `TaxYearPack.btlSection24CreditRate` per year. */
+export const DEFAULT_BTL_INTEREST_RELIEF = 0.2;
 
 // Mortgage overpayment cap (PRD §5.8.3)
 export const DEFAULT_OVERPAYMENT_CAP = 0.1;

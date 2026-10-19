@@ -9,7 +9,11 @@ describe("economicScenarioFromProfile", () => {
     const profile = makeDefaultProfile();
     const pack = TAX_YEAR_2025_26;
     const asOf = "2026-04-06";
-    const legacy = runProjection(profile, { taxYearPack: pack, asOfDate: asOf });
+    const legacy = runProjection(profile, {
+      taxYearPack: pack,
+      asOfDate: asOf,
+      freezeTaxYearPack: true,
+    });
     const startYear = 2026;
     const scenario = economicScenarioFromProfile(profile, startYear, legacy.years.length);
     const withEcon = runProjection(profile, {

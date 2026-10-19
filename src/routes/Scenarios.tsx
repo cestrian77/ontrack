@@ -70,8 +70,12 @@ export default function Scenarios() {
     chartScope === "partner" && partnerProfile ? partnerProfile : profile;
 
   const chartBaseProj = useMemo(
-    () => runProjection(chartProfile, { taxYearPack: basePack }),
-    [chartProfile, basePack],
+    () =>
+      runProjection(chartProfile, {
+        taxYearPack: basePack,
+        freezeTaxYearPack: analysisTaxYearLabel != null,
+      }),
+    [chartProfile, basePack, analysisTaxYearLabel],
   );
   const chartBaseFire = useMemo(
     () => computeFire(chartProfile, chartBaseProj, basePack),
@@ -86,7 +90,10 @@ export default function Scenarios() {
           : profile;
       const next = applyScenario(target, s);
       const pack = scenarioTaxYearPack(basePack, s.params?.taxYearLabel);
-      const proj = runProjection(next, { taxYearPack: pack });
+      const proj = runProjection(next, {
+        taxYearPack: pack,
+        freezeTaxYearPack: !!s.params?.taxYearLabel,
+      });
       const f = computeFire(next, proj, pack);
       const atRet = proj.years.find((y) => y.age === next.retirementTargetAge);
       return { scenario: s, fire: f, projection: proj, atRet };

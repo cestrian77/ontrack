@@ -20,6 +20,7 @@ import {
   type BtlPropertyReportBlock,
   type TaxDashboardReport,
 } from "@/lib/taxDashboardReport";
+import { buildTaxYearOutlook } from "@/lib/taxYearOutlook";
 import { gbp, pct } from "@/lib/utils";
 
 export interface ReportMetric {
@@ -199,7 +200,10 @@ export function buildReportData({
           : primaryProfile;
       const updatedProfile = applyScenario(base, scenario);
       const pack = scenarioTaxYearPack(baseTaxYearPack, scenario.params?.taxYearLabel);
-      const scenarioProjection = runProjection(updatedProfile, { taxYearPack: pack });
+      const scenarioProjection = runProjection(updatedProfile, {
+        taxYearPack: pack,
+        freezeTaxYearPack: !!scenario.params?.taxYearLabel,
+      });
       const scenarioFire = computeFire(updatedProfile, scenarioProjection, pack);
       const scenarioAtRetirement = scenarioProjection.years.find(
         (year) => year.age === updatedProfile.retirementTargetAge,
@@ -222,6 +226,26 @@ export function buildReportData({
     })),
     assumptions: [
       { label: "Tax year (analysis)", value: baseTaxYearPack.label },
+      {
+        label: "Tax rules in projection",
+        value: projection.meta.steppedTaxYears
+          ? "Step with calendar (registered packs)"
+          : "Frozen to analysis year",
+      },
+      ...(buildTaxYearOutlook(primaryProfile, baseTaxYearPack, projection)
+        ? [
+            {
+              label: "Next tax-year BTL impact (illustrative)",
+              value: (() => {
+                const o = buildTaxYearOutlook(primaryProfile, baseTaxYearPack, projection);
+                if (!o?.btlAnnualDelta) return "See dashboard";
+                return o.btlAnnualDelta < 0
+                  ? `${gbp(-o.btlAnnualDelta)}/yr vs ${baseTaxYearPack.label} (${o.nextPackLabel})`
+                  : "Neutral at current rents";
+              })(),
+            },
+          ]
+        : []),
       { label: "CPI inflation", value: pct(profile.cpi) },
       { label: "Cash rate", value: pct(profile.cashRate) },
       { label: "Cash ISA interest (nominal)", value: pct(profile.cashIsaRate) },

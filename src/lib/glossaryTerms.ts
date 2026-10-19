@@ -23,7 +23,7 @@ export const GLOSSARY_ENTRIES: readonly GlossaryEntry[] = [
   },
   {
     term: "Section 24",
-    body: "Restriction of mortgage interest relief on residential BTL: finance costs partly replaced by a basic-rate tax credit in the model.",
+    body: "Restriction of mortgage interest relief on residential BTL: finance costs partly replaced by a tax credit at the basic property rate (20% until 2026/27, 22% from 2027/28). Rental profit uses property income tax rates from 2027/28.",
   },
   {
     term: "NMPA / SPA",

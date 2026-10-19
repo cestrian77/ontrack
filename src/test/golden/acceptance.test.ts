@@ -112,6 +112,39 @@ describe("Phase 1 acceptance criteria (PRD §16.1)", () => {
     expect(ins.some((i) => i.id === "lisa_unused")).toBe(false);
   });
 
+  it("Hides LISA insight when too old to open or contribute", () => {
+    const p = makeDefaultProfile();
+    p.hasLisa = true;
+    p.lisaValue = 0;
+    p.lisaMonthly = 0;
+    p.dateOfBirth = "1975-01-01";
+    const proj = runProjection(p);
+    const fire = computeFire(p, proj);
+    const ins = generateInsights({
+      profile: p,
+      projection: proj,
+      fire,
+      taxYearPack: currentTaxYearPack(),
+    });
+    expect(ins.some((i) => i.id === "lisa_unused")).toBe(false);
+  });
+
+  it("ISA allowance insight uses tentative wording", () => {
+    const p = makeDefaultProfile();
+    p.ssIsaMonthly = 1_000;
+    const proj = runProjection(p);
+    const fire = computeFire(p, proj);
+    const ins = generateInsights({
+      profile: p,
+      projection: proj,
+      fire,
+      taxYearPack: currentTaxYearPack(),
+    });
+    const isa = ins.find((i) => i.id === "isa_allowance_remaining");
+    expect(isa?.body).toMatch(/may have up to/i);
+    expect(isa?.body).toMatch(/ad hoc/i);
+  });
+
   it("Performance: projection runs in <100ms for 60-year horizon", () => {
     const p = makeDefaultProfile();
     const start = performance.now();

@@ -58,7 +58,11 @@ export function useProjection(profileOverride?: UserProfile): {
       part !== null;
 
     const planningHorizonAge = householdPrefs.planningHorizonAge ?? 100;
-    const runOpts = { taxYearPack, planningHorizonAge };
+    const runOpts = {
+      taxYearPack,
+      planningHorizonAge,
+      freezeTaxYearPack: analysisTaxYearLabel != null,
+    };
 
     if (canHousehold) {
       const projA = runProjection(prim, runOpts);

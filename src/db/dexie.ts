@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import type { HouseholdPrefs, Scenario, UserProfile } from "@/engine/types";
+import type { HouseholdBudget, HouseholdPrefs, Scenario, UserProfile } from "@/engine/types";
 
 /** @deprecated v1 shape — migrated to ProfileRowV2 on upgrade */
 export interface ProfileRow {
@@ -15,6 +15,7 @@ export interface ProfileRowV2 {
   partner: UserProfile | null;
   dependentCount: number;
   householdPrefs?: HouseholdPrefs;
+  householdBudget?: HouseholdBudget;
   onboardingComplete: boolean;
   updatedAt: string;
 }
@@ -74,6 +75,18 @@ export class OnTrackDB extends Dexie {
       .upgrade((tx) => {
         return tx.table("profile").toCollection().modify((row: ProfileRowV2) => {
           row.householdPrefs = row.householdPrefs ?? {};
+        });
+      });
+    this.version(4)
+      .stores({
+        profile: "id, updatedAt",
+        scenarios: "id, name, createdAt",
+        insights: "id, dismissedAt",
+        projectionCache: "hash, cachedAt",
+      })
+      .upgrade((tx) => {
+        return tx.table("profile").toCollection().modify((row: ProfileRowV2) => {
+          row.householdBudget = row.householdBudget ?? { lines: [], children: [] };
         });
       });
   }

@@ -11,6 +11,7 @@ import {
   CircleHelp,
   Settings as SettingsIcon,
   SlidersHorizontal,
+  Wallet,
   Activity,
   Sun,
   Moon,
@@ -23,6 +24,7 @@ import { useScenarioStore } from "@/store/useScenarioStore";
 import { useTheme } from "./ThemeProvider";
 import { ageFromDob } from "@/engine/project/runProjection";
 import { useProjection } from "@/lib/hooks";
+import { useUiStore } from "@/store/useUiStore";
 import { AnalysisViewSwitch } from "@/components/AnalysisViewSwitch";
 import { cn, gbp, pct } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ import { FIRE_PROGRESS_TOOLTIP } from "@/lib/fireMetricsExplain";
 const NAV = [
   { to: "/dashboard", label: "Dashboard", Icon: Home },
   { to: "/fire", label: "FIRE", Icon: Flame },
+  { to: "/spending", label: "Spending", Icon: Wallet },
   { to: "/scenarios", label: "Scenarios", Icon: SlidersHorizontal },
   { to: "/stress", label: "Stress test", Icon: Activity },
   { to: "/property", label: "Property", Icon: Building2 },
@@ -79,6 +82,7 @@ export function AppLayout() {
     setMoreOpen(false);
   }, [location.pathname]);
 
+  const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
   const { fire, taxYearPack, analysisProfile } = useProjection();
   const age = ageFromDob(analysisProfile.dateOfBirth);
   const yearsToTarget = Math.max(
@@ -133,7 +137,17 @@ export function AppLayout() {
               </span>
               <span className="h-4 w-px bg-border" />
               <span className="text-muted-foreground">Tax yr</span>
-              <span className="font-medium tabular-nums">{taxYearPack.label}</span>
+              <span
+                className="font-medium tabular-nums"
+                title={
+                  analysisTaxYearLabel
+                    ? "Frozen tax rules for analysis and projection"
+                    : "Analysis uses today's tax year; projections step registered packs by calendar year"
+                }
+              >
+                {taxYearPack.label}
+                {!analysisTaxYearLabel ? "+" : ""}
+              </span>
             </div>
             <ThemeSwitch theme={theme} setTheme={setTheme} />
           </div>

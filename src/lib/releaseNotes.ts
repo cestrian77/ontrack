@@ -20,6 +20,22 @@ export interface ReleaseNoteEntry {
 
 export const USER_RELEASE_NOTES: ReleaseNoteEntry[] = [
   {
+    version: "1.2.0",
+    date: "2026-10-19",
+    sections: {
+      added: [
+        "Spending page: household budget, children, compile totals, and apply to your plan (included in data pack).",
+        "2027/28 tax-year pack with BTL property income rates and 22% finance-cost credit from April 2027.",
+        "Projections step tax-year packs along the horizon by default; pin a year in Settings to freeze rules.",
+        "Pension drawdown enforces NMPA 57 from 2028 when your profile still allows access at 55.",
+        "Help and stress-test copy for retirement targets, methodology, and tax-year behaviour.",
+      ],
+      model: [
+        "2027/28 personal allowance ordering between property and other income is not modelled yet (see Help).",
+      ],
+    },
+  },
+  {
     version: "1.1.1",
     date: "2026-03-21",
     sections: {

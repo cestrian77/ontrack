@@ -4,6 +4,7 @@ import { combineProjections } from "@/engine/household/combineProjections";
 import { resolveHouseholdRetirementIncome } from "@/engine/household/householdIncome";
 import { generateStochasticScenario } from "@/engine/montecarlo/generatePath";
 import {
+  DEFAULT_MONTE_CARLO_SEED,
   DEFAULT_MONTE_CARLO_TRIALS,
   DEFAULT_MONTE_CARLO_VOLATILITY,
   DEFAULT_PLANNING_HORIZON_AGE,
@@ -19,8 +20,21 @@ export interface StressRunInput {
   partner: UserProfile | null;
   householdPrefs: HouseholdPrefs;
   taxYearPack: TaxYearPack;
+  freezeTaxYearPack?: boolean;
   isHousehold: boolean;
   mode: "monte_carlo" | "historical";
+}
+
+function projectionOpts(
+  input: StressRunInput,
+  extra?: { economicScenario?: ReturnType<typeof historicalScenarioFromProfile>; planningHorizonAge: number },
+) {
+  return {
+    taxYearPack: input.taxYearPack,
+    freezeTaxYearPack: input.freezeTaxYearPack ?? false,
+    planningHorizonAge: extra?.planningHorizonAge,
+    economicScenario: extra?.economicScenario,
+  };
 }
 
 function historicalSingleResult(
@@ -55,7 +69,7 @@ export function runStressAnalysis(input: StressRunInput): MonteCarloResult {
   const planningHorizonAge = prefs.planningHorizonAge ?? DEFAULT_PLANNING_HORIZON_AGE;
   const trials =
     input.mode === "historical" ? 1 : (prefs.monteCarloTrials ?? DEFAULT_MONTE_CARLO_TRIALS);
-  const seed = prefs.monteCarloSeed ?? 42;
+  const seed = prefs.monteCarloSeed ?? DEFAULT_MONTE_CARLO_SEED;
 
   const baseConfig = {
     trials,
@@ -66,20 +80,16 @@ export function runStressAnalysis(input: StressRunInput): MonteCarloResult {
   };
 
   if (input.mode === "historical") {
-    const proj0 = runProjection(input.primary, {
-      taxYearPack: input.taxYearPack,
-      planningHorizonAge,
-    });
+    const proj0 = runProjection(input.primary, projectionOpts(input, { planningHorizonAge }));
     const startYear = proj0.years[0]?.year ?? new Date().getFullYear();
     const yearCount = proj0.years.length;
     const scenario = historicalScenarioFromProfile(input.primary, startYear, yearCount);
 
     if (!input.isHousehold || !input.partner) {
-      const projection = runProjection(input.primary, {
-        taxYearPack: input.taxYearPack,
-        economicScenario: scenario,
-        planningHorizonAge,
-      });
+      const projection = runProjection(
+        input.primary,
+        projectionOpts(input, { economicScenario: scenario, planningHorizonAge }),
+      );
       return historicalSingleResult(projection, baseConfig);
     }
 
@@ -88,16 +98,14 @@ export function runStressAnalysis(input: StressRunInput): MonteCarloResult {
       input.partner,
       prefs,
     );
-    const projA = runProjection(input.primary, {
-      taxYearPack: input.taxYearPack,
-      economicScenario: scenario,
-      planningHorizonAge,
-    });
-    const projB = runProjection(input.partner, {
-      taxYearPack: input.taxYearPack,
-      economicScenario: scenario,
-      planningHorizonAge,
-    });
+    const projA = runProjection(
+      input.primary,
+      projectionOpts(input, { economicScenario: scenario, planningHorizonAge }),
+    );
+    const projB = runProjection(
+      input.partner,
+      projectionOpts(input, { economicScenario: scenario, planningHorizonAge }),
+    );
     const projection = combineProjections(projA, projB, {
       primary: input.primary,
       partner: input.partner,
@@ -115,6 +123,7 @@ export function runStressAnalysis(input: StressRunInput): MonteCarloResult {
       volatility,
       planningHorizonAge,
       essentialOnly: prefs.successUsesEssentialOnly,
+      freezeTaxYearPack: input.freezeTaxYearPack,
     });
   }
 
@@ -125,10 +134,7 @@ export function runStressAnalysis(input: StressRunInput): MonteCarloResult {
   );
   const rng = mulberry32(seed);
   const paths = [];
-  const proj0 = runProjection(input.primary, {
-    taxYearPack: input.taxYearPack,
-    planningHorizonAge,
-  });
+  const proj0 = runProjection(input.primary, projectionOpts(input, { planningHorizonAge }));
   const yearCount = proj0.years.length;
   const startYear = proj0.years[0]?.year ?? new Date().getFullYear();
 
@@ -140,16 +146,14 @@ export function runStressAnalysis(input: StressRunInput): MonteCarloResult {
       volatility,
       rng,
     );
-    const projA = runProjection(input.primary, {
-      taxYearPack: input.taxYearPack,
-      economicScenario: scenario,
-      planningHorizonAge,
-    });
-    const projB = runProjection(input.partner, {
-      taxYearPack: input.taxYearPack,
-      economicScenario: scenario,
-      planningHorizonAge,
-    });
+    const projA = runProjection(
+      input.primary,
+      projectionOpts(input, { economicScenario: scenario, planningHorizonAge }),
+    );
+    const projB = runProjection(
+      input.partner,
+      projectionOpts(input, { economicScenario: scenario, planningHorizonAge }),
+    );
     const projection = combineProjections(projA, projB, {
       primary: input.primary,
       partner: input.partner,

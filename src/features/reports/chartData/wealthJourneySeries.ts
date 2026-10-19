@@ -47,6 +47,7 @@ export function buildWealthJourneySeriesData({
   const scenarioProjections = scenarios.map((s) =>
     runProjection(applyScenario(resolve(s), s), {
       taxYearPack: scenarioTaxYearPack(baseTaxYearPack, s.params?.taxYearLabel),
+      freezeTaxYearPack: !!s.params?.taxYearLabel,
     }),
   );
 

@@ -2,6 +2,7 @@ import type { TaxYearPack } from "@/engine/constants/taxYears";
 import { btlAnnualCashflow, btlYields } from "@/engine/btl/cashflow";
 import { workplaceContribAnnual, sippGrossAnnual } from "@/engine/pension/contributions";
 import { incomeTax, marginalIncomeRate } from "@/engine/tax/incomeTax";
+import { marginalPropertyIncomeRate } from "@/engine/tax/propertyTax";
 import { nationalInsurance } from "@/engine/tax/ni";
 import type { UserProfile } from "@/engine/types";
 import { gbp, pct } from "@/lib/utils";
@@ -96,21 +97,35 @@ export function buildBtlPropertyReportBlocks(
       taxYearPack,
     });
     const y = btlYields(p, cf);
+    const propertyMarginal = marginalPropertyIncomeRate(
+      profile.grossSalary + Math.max(0, cf.taxableIncome),
+      profile.region,
+      taxYearPack,
+    );
     const label = p.label?.trim() || `BTL ${idx + 1}`;
     return {
       propertyId: p.id,
-      title: `${label}: ${gbp(p.value)}`,
+      title: `${label}: ${gbp(p.value)} (${taxYearPack.label})`,
       rows: [
         { label: "Gross yield", value: `${y.grossYield.toFixed(2)}%` },
         { label: "Net yield", value: `${y.netYield.toFixed(2)}%` },
         { label: "Cash-on-cash", value: `${y.cashOnCash.toFixed(2)}%` },
         {
+          label: "Property marginal rate",
+          value: pct(propertyMarginal),
+          emphasis: "muted",
+        },
+        {
           label: "Monthly cashflow (post-tax)",
           value: gbp(cf.netCashflow / 12),
           emphasis: cf.netCashflow >= 0 ? "positive" : "negative",
         },
+        { label: "Rental tax (annual)", value: gbp(cf.taxOnRental), emphasis: "muted" },
         { label: "Current equity", value: gbp(p.value - p.mortgageBalance) },
-        { label: "S24 credit", value: gbp(cf.s24Credit) },
+        {
+          label: `S24 credit (${pct(taxYearPack.btlSection24CreditRate)})`,
+          value: gbp(cf.s24Credit),
+        },
       ],
     };
   });

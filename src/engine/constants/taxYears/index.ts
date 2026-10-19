@@ -1,6 +1,7 @@
 import { TAX_YEAR_2024_25 } from "./2024-25";
 import { TAX_YEAR_2025_26 } from "./2025-26";
 import { TAX_YEAR_2026_27 } from "./2026-27";
+import { TAX_YEAR_2027_28 } from "./2027-28";
 import type { TaxYearPack } from "./types";
 
 export type { TaxBand, TaxYearPack } from "./types";
@@ -13,7 +14,20 @@ export const TAX_YEAR_PACKS: TaxYearPack[] = [
   TAX_YEAR_2024_25,
   TAX_YEAR_2025_26,
   TAX_YEAR_2026_27,
+  TAX_YEAR_2027_28,
 ];
+
+/** UK tax-year pack for a projection calendar year (rules from 6 Apr that year). */
+export function resolveTaxYearPackForCalendarYear(calendarYear: number): TaxYearPack {
+  return resolveTaxYearPack(`${calendarYear}-04-06`);
+}
+
+/** Next chronologically registered pack after `pack`, if any. */
+export function nextRegisteredTaxYearPack(pack: TaxYearPack): TaxYearPack | null {
+  const i = TAX_YEAR_PACKS.findIndex((p) => p.label === pack.label);
+  if (i < 0 || i >= TAX_YEAR_PACKS.length - 1) return null;
+  return TAX_YEAR_PACKS[i + 1];
+}
 
 /** Returns the UK tax-year label (e.g. "2026/27") for a given date. */
 export function taxYearLabelForDate(date: Date = new Date()): string {

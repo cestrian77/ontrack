@@ -303,6 +303,8 @@ export interface ProjectionYear {
     gia: number;
   };
   btlCashflowNet: number; // post-tax
+  /** UK tax-year ruleset applied this projection year (when stepping is enabled). */
+  taxYearLabel?: string;
   taxPaid: number;
   statePensionIncome: number;
   dbIncome: number;
@@ -338,8 +340,19 @@ export interface Projection {
     /** Set when `combineProjections` merged two people (indicative household view). */
     isHousehold?: boolean;
     planningHorizonAge?: number;
+    /** False when a single frozen tax-year pack is used for the whole horizon. */
+    steppedTaxYears?: boolean;
   };
 }
+
+/** Re-exported from budget module for persistence; see `engine/household/budget/types`. */
+export type {
+  BudgetLine,
+  BudgetOwner,
+  ChildProfile,
+  HouseholdBudget,
+  UniversitySupportPrefs,
+} from "@/engine/household/budget/types";
 
 export interface HouseholdPrefs {
   /** Shared retirement budget when viewing couple/family; defaults to sum of person targets. */

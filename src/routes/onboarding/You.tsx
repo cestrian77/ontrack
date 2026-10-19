@@ -1,6 +1,7 @@
 import { useProfileStore } from "@/store/useProfileStore";
 import { makePartnerProfileDefaults } from "@/engine/constants/defaults";
 import { Field, NumberInput } from "@/components/forms/Field";
+import { MoneyPeriodInput } from "@/components/forms/MoneyPeriodInput";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -56,15 +57,14 @@ export default function OnboardingYou() {
         </Field>
         <Field
           label="Target retirement income"
-          hint="Today's £, net of tax. The lifestyle income you want."
-          example="£35,000 p.a."
+          hint="Today's £, net of tax. The lifestyle income you want. Stored and projected per year."
+          example="£35,000 per year"
         >
-          <NumberInput
-            prefix="£"
-            value={profile.targetRetirementIncome}
-            onChange={(n) => update({ targetRetirementIncome: n })}
-            min={5_000}
-            max={500_000}
+          <MoneyPeriodInput
+            annualValue={profile.targetRetirementIncome}
+            onAnnualChange={(n) => update({ targetRetirementIncome: n })}
+            minAnnual={5_000}
+            maxAnnual={500_000}
           />
         </Field>
         <Field label="Region" hint="Applies Scottish income tax bands if selected.">
@@ -115,28 +115,26 @@ export default function OnboardingYou() {
 
         <Field
           label="Gross salary"
-          hint="Pre-tax employment income."
-          example="£60,000"
+          hint="Pre-tax employment income (annual in projections)."
+          example="£60,000 per year"
         >
-          <NumberInput
-            prefix="£"
-            value={profile.grossSalary}
-            onChange={(n) => update({ grossSalary: n })}
-            min={0}
-            max={1_000_000}
+          <MoneyPeriodInput
+            annualValue={profile.grossSalary}
+            onAnnualChange={(n) => update({ grossSalary: n })}
+            minAnnual={0}
+            maxAnnual={1_000_000}
           />
         </Field>
         <Field
           label="Bonus / variable pay"
           hint="Optional. Added to gross; not pensionable by default."
-          example="£0"
+          example="£0 per year"
         >
-          <NumberInput
-            prefix="£"
-            value={profile.bonus}
-            onChange={(n) => update({ bonus: n })}
-            min={0}
-            max={500_000}
+          <MoneyPeriodInput
+            annualValue={profile.bonus}
+            onAnnualChange={(n) => update({ bonus: n })}
+            minAnnual={0}
+            maxAnnual={500_000}
           />
         </Field>
       </div>

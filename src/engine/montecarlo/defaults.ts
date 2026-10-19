@@ -10,3 +10,5 @@ export const DEFAULT_MONTE_CARLO_VOLATILITY: MonteCarloVolatilityPrefs = {
 
 export const DEFAULT_PLANNING_HORIZON_AGE = 100;
 export const DEFAULT_MONTE_CARLO_TRIALS = 1000;
+/** Built-in PRNG seed when Settings → Monte Carlo seed is left empty. */
+export const DEFAULT_MONTE_CARLO_SEED = 42;

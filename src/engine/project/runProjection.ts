@@ -5,7 +5,10 @@ import type {
   UserProfile,
 } from "@/engine/types";
 import type { TaxYearPack } from "@/engine/constants/taxYears";
-import { currentTaxYearPack } from "@/engine/constants/taxYears";
+import {
+  currentTaxYearPack,
+  resolveTaxYearPackForCalendarYear,
+} from "@/engine/constants/taxYears";
 import {
   economicScenarioFromProfile,
   economicYearFromProfile,
@@ -38,10 +41,20 @@ import { compoundAnnual, lisaAnnualGrowth } from "@/engine/wrappers/isa";
 import { giaAnnualGrowth } from "@/engine/wrappers/gia";
 import { balanceAfterMonths } from "@/engine/property/mortgage";
 import { btlAnnualCashflow } from "@/engine/btl/cashflow";
+import {
+  effectiveNmpaForCalendarYear,
+  firstPensionAccessAgeFromYears,
+} from "@/engine/pension/accessAge";
 import { DEFAULT_PLANNING_HORIZON_AGE } from "@/engine/montecarlo/defaults";
 
 export interface RunProjectionOptions {
   taxYearPack?: TaxYearPack;
+  /**
+   * When false (default), each projection year uses the registered pack for that
+   * calendar year (6 Apr). When true, `taxYearPack` applies to every year
+   * (scenario / pinned analysis ruleset).
+   */
+  freezeTaxYearPack?: boolean;
   /** ISO calendar date (yyyy-mm-dd). Fixes "today" for deterministic tests and cross-platform goldens. */
   asOfDate?: string;
   economicScenario?: EconomicScenario;
@@ -80,12 +93,16 @@ export function runProjection(
   profile: UserProfile,
   options?: RunProjectionOptions,
 ): Projection {
-  const taxYearPack = options?.taxYearPack ?? currentTaxYearPack();
+  const anchorTaxYearPack = options?.taxYearPack ?? currentTaxYearPack();
+  const freezeTaxYearPack = options?.freezeTaxYearPack ?? false;
+  const packForYear = (calendarYear: number) =>
+    freezeTaxYearPack
+      ? anchorTaxYearPack
+      : resolveTaxYearPackForCalendarYear(calendarYear);
   const asOf = resolveAsOf(options);
   const currentAge = ageFromDob(profile.dateOfBirth, asOf);
   const startYear = asOf.getUTCFullYear();
   const retirementAge = profile.retirementTargetAge;
-  const nmpa = profile.pensionAccessAge;
   const spa = profile.statePensionClaimAge;
   const horizonAge = options?.planningHorizonAge ?? DEFAULT_PLANNING_HORIZON_AGE;
   const horizon = Math.max(horizonAge - currentAge, 1);
@@ -118,6 +135,7 @@ export function runProjection(
   for (let i = 0; i <= horizon; i++) {
     const age = currentAge + i;
     const year = startYear + i;
+    const taxYearPack = packForYear(year);
     const retired = age >= retirementAge;
     const econFallback = economicYearFromProfile(profile, year);
     const econ = resolveEconomicYear(economics, i, econFallback);
@@ -308,9 +326,10 @@ export function runProjection(
         btlCashflowNet +
         eventIncome;
       const need = Math.max(0, grossNeed - passive);
+      const nmpaThisYear = effectiveNmpaForCalendarYear(profile, year, taxYearPack);
       const alloc = drawdownStrategy.allocate({
         age,
-        nmpa,
+        nmpa: nmpaThisYear,
         region: profile.region,
         taxYearPack,
         netNeed: need,
@@ -373,6 +392,7 @@ export function runProjection(
         gia: annualGiaContrib,
       },
       btlCashflowNet,
+      taxYearLabel: taxYearPack.label,
       taxPaid,
       statePensionIncome,
       dbIncome,
@@ -392,6 +412,8 @@ export function runProjection(
     });
   }
 
+  const nmpa = firstPensionAccessAgeFromYears(profile, years, packForYear);
+
   return {
     years,
     meta: {
@@ -401,6 +423,7 @@ export function runProjection(
       spa,
       horizon: horizon + 1,
       planningHorizonAge: horizonAge,
+      steppedTaxYears: !freezeTaxYearPack,
     },
   };
 }

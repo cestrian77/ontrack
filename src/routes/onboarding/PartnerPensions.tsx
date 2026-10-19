@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useProfileStore } from "@/store/useProfileStore";
 import { Field, NumberInput, PercentInput } from "@/components/forms/Field";
+import { MoneyPeriodInput } from "@/components/forms/MoneyPeriodInput";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { StepShell } from "./StepShell";
@@ -79,13 +80,18 @@ export default function OnboardingPartnerPensions() {
             max={75}
           />
         </Field>
-        <Field label="State Pension forecast" example="£221.20/wk">
-          <NumberInput
-            prefix="£"
-            suffix="/wk"
+        <Field label="State Pension forecast" example="£221 per week">
+          <MoneyPeriodInput
+            annualValue={p.statePensionWeekly * 52}
+            onAnnualChange={(a) =>
+              updatePartner({
+                statePensionWeekly: Math.round((a / 52) * 100) / 100,
+              })
+            }
+            defaultPeriod="week"
+            roundAnnual={false}
             step={0.1}
-            value={p.statePensionWeekly}
-            onChange={(n) => updatePartner({ statePensionWeekly: n })}
+            minAnnual={0}
           />
         </Field>
 
@@ -104,11 +110,11 @@ export default function OnboardingPartnerPensions() {
 
         {p.hasDB && (
           <>
-            <Field label="DB accrued annual income" example="£8,000 p.a.">
-              <NumberInput
-                prefix="£"
-                value={p.dbAnnualIncome}
-                onChange={(n) => updatePartner({ dbAnnualIncome: n })}
+            <Field label="DB accrued income" example="£8,000 per year">
+              <MoneyPeriodInput
+                annualValue={p.dbAnnualIncome}
+                onAnnualChange={(n) => updatePartner({ dbAnnualIncome: n })}
+                minAnnual={0}
               />
             </Field>
             <Field label="DB Normal Retirement Age" example="65">

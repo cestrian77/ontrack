@@ -2,15 +2,31 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/forms/Field";
+import { MetricHint } from "@/components/ui/metric-hint";
 import { useProjection } from "@/lib/hooks";
 import { useProfileStore } from "@/store/useProfileStore";
 import { useUiStore } from "@/store/useUiStore";
 import { gbp, pct } from "@/lib/utils";
 import type { MonteCarloResult } from "@/engine/montecarlo/runMonteCarlo";
+import { DEFAULT_MONTE_CARLO_VOLATILITY } from "@/engine/montecarlo/defaults";
 import { DISCLAIMER_SHORT } from "@/lib/legalCopy";
 import { resolveHouseholdRetirementIncome } from "@/engine/household/householdIncome";
 import type { StressRunInput } from "@/lib/monteCarloRunner";
 import type { MonteCarloWorkerResponse } from "@/workers/monteCarloWorker";
+import {
+  STRESS_PERCENTILE_HINT,
+  STRESS_PLAN_AGE_HINT,
+  STRESS_SUCCESS_RATE_HINT,
+  STRESS_TERMINAL_WEALTH_HINT,
+  STRESS_TRIALS_HINT,
+  STRESS_VOLATILITY_ASSET_HINTS,
+  STRESS_VOLATILITY_INTRO,
+  formatVolatilityDefaults,
+} from "@/lib/stressExplain";
+
+const VOL_KEYS = ["pension", "isa", "gia", "cash"] as const;
 
 export default function Stress() {
   const { taxYearPack, analysisProfile, isHouseholdAnalysis } = useProjection();
@@ -19,6 +35,7 @@ export default function Stress() {
   const householdPrefs = useProfileStore((s) => s.householdPrefs);
   const updateHouseholdPrefs = useProfileStore((s) => s.updateHouseholdPrefs);
   const analysisViewMode = useUiStore((s) => s.analysisViewMode);
+  const analysisTaxYearLabel = useUiStore((s) => s.analysisTaxYearLabel);
 
   const [mode, setMode] = useState<"monte_carlo" | "historical">("monte_carlo");
   const [running, setRunning] = useState(false);
@@ -44,6 +61,7 @@ export default function Stress() {
       partner,
       householdPrefs,
       taxYearPack,
+      freezeTaxYearPack: analysisTaxYearLabel != null,
       isHousehold,
       mode,
     };
@@ -64,7 +82,7 @@ export default function Stress() {
     };
     w.addEventListener("message", onMessage);
     w.postMessage({ type: "run", runId, input });
-  }, [primary, partner, householdPrefs, taxYearPack, isHousehold, mode]);
+  }, [primary, partner, householdPrefs, taxYearPack, analysisTaxYearLabel, isHousehold, mode]);
 
   useEffect(() => {
     return () => {
@@ -73,7 +91,7 @@ export default function Stress() {
     };
   }, []);
 
-  const vol = householdPrefs.monteCarloVolatility;
+  const vol = householdPrefs.monteCarloVolatility ?? DEFAULT_MONTE_CARLO_VOLATILITY;
   const historical = mode === "historical";
 
   return (
@@ -87,6 +105,10 @@ export default function Stress() {
         <p className="mt-2 text-body-sm text-on-surface-variant">
           <Link className="text-primary underline" to="/help#stress-testing">
             Stress testing methodology
+          </Link>
+          {" · "}
+          <Link className="text-primary underline" to="/settings">
+            Growth rates &amp; CPI (Settings)
           </Link>
           {" · "}
           <Link className="text-primary underline" to="/help#career-guardrails-care-iht">
@@ -105,8 +127,7 @@ export default function Stress() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <label className="block text-label-sm text-on-surface-variant">
-            Plan to age
+          <Field label="Plan to age" hint={STRESS_PLAN_AGE_HINT}>
             <input
               type="range"
               min={75}
@@ -119,11 +140,10 @@ export default function Stress() {
               }
             />
             <span className="text-on-surface">{householdPrefs.planningHorizonAge ?? 100}</span>
-          </label>
+          </Field>
 
           {!historical && (
-            <label className="block text-label-sm text-on-surface-variant">
-              Trials
+            <Field label="Trials" hint={STRESS_TRIALS_HINT}>
               <input
                 type="range"
                 min={200}
@@ -136,7 +156,7 @@ export default function Stress() {
                 }
               />
               <span className="text-on-surface">{householdPrefs.monteCarloTrials ?? 1000}</span>
-            </label>
+            </Field>
           )}
 
           {historical && (
@@ -146,33 +166,59 @@ export default function Stress() {
             </p>
           )}
 
-          {vol && !historical && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(["pension", "isa", "gia", "cash"] as const).map((key) => (
-                <label key={key} className="text-label-sm text-on-surface-variant">
-                  {key} volatility (σ)
-                  <input
-                    type="number"
-                    step={0.01}
-                    min={0}
-                    max={0.5}
-                    className="mt-1 w-full rounded-md border border-outline-variant px-2 py-1"
-                    value={vol[key].stdev}
-                    onChange={(e) =>
-                      updateHouseholdPrefs({
-                        monteCarloVolatility: {
-                          ...vol,
-                          [key]: { stdev: Number(e.target.value) },
-                        },
-                      })
-                    }
-                  />
-                </label>
-              ))}
+          {!historical && (
+            <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-body-sm text-on-surface-variant">{STRESS_VOLATILITY_INTRO}</p>
+              <p className="text-body-sm text-on-surface-variant">
+                OnTrack defaults (σ): {formatVolatilityDefaults()}.{" "}
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto p-0 text-primary"
+                  onClick={() =>
+                    updateHouseholdPrefs({
+                      monteCarloVolatility: DEFAULT_MONTE_CARLO_VOLATILITY,
+                    })
+                  }
+                >
+                  Reset volatility to defaults
+                </Button>
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {VOL_KEYS.map((key) => {
+                  const meta = STRESS_VOLATILITY_ASSET_HINTS[key];
+                  return (
+                    <Field
+                      key={key}
+                      label={meta.label}
+                      hint={meta.hint}
+                      example={meta.example}
+                    >
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step={0.01}
+                        min={0}
+                        max={0.5}
+                        className="text-foreground"
+                        value={vol[key].stdev}
+                        onChange={(e) =>
+                          updateHouseholdPrefs({
+                            monteCarloVolatility: {
+                              ...vol,
+                              [key]: { stdev: Number(e.target.value) },
+                            },
+                          })
+                        }
+                      />
+                    </Field>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          <label className="flex items-center gap-2 text-label-sm">
+          <label className="flex items-center gap-2 text-label-sm text-on-surface">
             <input
               type="checkbox"
               checked={householdPrefs.successUsesEssentialOnly ?? false}
@@ -213,20 +259,53 @@ export default function Stress() {
                 : `${result.config.trials} simulated paths`}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-headline-sm text-on-surface">
-              Success rate: {pct(result.successRate * 100, 1)}
-            </p>
-            {!historical && (
-              <p className="text-body-md text-on-surface-variant">
-                Terminal investable wealth — P10 {gbp(result.terminalWealthP10)}, P50{" "}
-                {gbp(result.terminalWealthP50)}, P90 {gbp(result.terminalWealthP90)}
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-headline-sm text-on-surface">
+                Success rate: {pct(result.successRate, 1)}
               </p>
+              <MetricHint text={STRESS_SUCCESS_RATE_HINT} />
+            </div>
+
+            {!historical && (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-body-md font-medium text-on-surface">
+                    Terminal investable wealth
+                  </p>
+                  <MetricHint text={STRESS_TERMINAL_WEALTH_HINT} />
+                </div>
+                <p className="text-body-md text-on-surface-variant">
+                  <span className="inline-flex items-center gap-1">
+                    P10 {gbp(result.terminalWealthP10)}
+                    <MetricHint text="10th percentile — only 10% of paths finished with less than this." />
+                  </span>
+                  {" · "}
+                  <span className="inline-flex items-center gap-1">
+                    P50 {gbp(result.terminalWealthP50)}
+                    <MetricHint text="Median outcome across trials." />
+                  </span>
+                  {" · "}
+                  <span className="inline-flex items-center gap-1">
+                    P90 {gbp(result.terminalWealthP90)}
+                    <MetricHint text="90th percentile — only 10% of paths finished with more than this." />
+                  </span>
+                </p>
+                <p className="text-body-sm text-on-surface-variant">{STRESS_PERCENTILE_HINT}</p>
+              </div>
             )}
             {historical && (
-              <p className="text-body-md text-on-surface-variant">
-                Terminal investable wealth: {gbp(result.terminalWealthP50)}
-              </p>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-body-md font-medium text-on-surface">
+                    Terminal investable wealth
+                  </p>
+                  <MetricHint text={STRESS_TERMINAL_WEALTH_HINT} />
+                </div>
+                <p className="text-body-md text-on-surface-variant">
+                  {gbp(result.terminalWealthP50)}
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>

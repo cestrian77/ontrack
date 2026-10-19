@@ -21,6 +21,7 @@ import Tax from "@/routes/Tax";
 import Insights from "@/routes/Insights";
 import Settings from "@/routes/Settings";
 import Stress from "@/routes/Stress";
+import Spending from "@/routes/Spending";
 import Help from "@/routes/Help";
 import WhatsNew from "@/routes/WhatsNew";
 import ReportBuilder from "@/routes/ReportBuilder";
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: "dashboard", element: <Dashboard /> },
+          { path: "spending", element: <Spending /> },
           { path: "fire", element: <Fire /> },
           { path: "stress", element: <Stress /> },
           { path: "scenarios", element: <Scenarios /> },

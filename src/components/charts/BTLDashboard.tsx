@@ -12,6 +12,7 @@ import {
 import type { TaxYearPack } from "@/engine/constants/taxYears";
 import type { Projection, UserProfile } from "@/engine/types";
 import { buildBtlPropertyReportBlocks } from "@/lib/taxDashboardReport";
+import { buildTaxYearOutlook } from "@/lib/taxYearOutlook";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { gbp, nominalise } from "@/lib/utils";
 import { chartTooltipContentStyle, chartTooltipWrapperStyle } from "@/lib/chart-theme";
@@ -34,6 +35,10 @@ export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
     );
   }
   const btlBlocks = buildBtlPropertyReportBlocks(profile, taxYearPack);
+  const outlook = buildTaxYearOutlook(profile, taxYearPack, projection);
+  const taxStepYear = projection.years.find(
+    (y, i) => i > 0 && y.taxYearLabel !== projection.years[i - 1]?.taxYearLabel,
+  );
 
   const trajectory = projection.years.map((y, i) => ({
     age: y.age,
@@ -46,6 +51,20 @@ export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
 
   return (
     <div className="space-y-6">
+      {outlook && (
+        <p className="text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+          {outlook.headline}: portfolio net cashflow about{" "}
+          <span className="font-medium text-foreground">
+            {outlook.btlAnnualDelta != null && outlook.btlAnnualDelta < 0
+              ? `${gbp(-outlook.btlAnnualDelta)} lower`
+              : "unchanged"}
+          </span>{" "}
+          vs {taxYearPack.label} at today&apos;s rents.
+          {projection.meta.steppedTaxYears && taxStepYear
+            ? ` Projections apply ${taxStepYear.taxYearLabel} from ${taxStepYear.year}.`
+            : null}
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {btlBlocks.map((block) => (
           <Card key={block.propertyId}>
@@ -65,6 +84,7 @@ export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
                         ? false
                         : undefined
                   }
+                  muted={r.emphasis === "muted"}
                 />
               ))}
             </CardContent>
@@ -135,14 +155,26 @@ export function BTLDashboard({ profile, projection, taxYearPack }: Props) {
   );
 }
 
-function Row({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+function Row({
+  label,
+  value,
+  positive,
+  muted,
+}: {
+  label: string;
+  value: string;
+  positive?: boolean;
+  muted?: boolean;
+}) {
   return (
     <div className="flex items-baseline justify-between gap-2">
       <span className="text-muted-foreground text-xs">{label}</span>
       <span
         className={`tabular-nums font-medium ${
           positive === undefined
-            ? ""
+            ? muted
+              ? "text-foreground/80"
+              : ""
             : positive
               ? "text-success"
               : "text-destructive"

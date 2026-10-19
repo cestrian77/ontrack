@@ -95,7 +95,8 @@
         "nmpa": 57,
         "spa": 67,
         "horizon": 65,
-        "planningHorizonAge": 100
+        "planningHorizonAge": 100,
+        "steppedTaxYears": false
       },
       "yearSnapshots": [
         {

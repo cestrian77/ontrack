@@ -61,6 +61,54 @@ interface NumberInputProps
   step?: number;
 }
 
+interface OptionalNumberInputProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> {
+  value: number | null | undefined;
+  onChange: (n: number | null) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  /** Shown when value is empty (uses built-in default). */
+  placeholder?: string;
+}
+
+/** Number field that can be cleared; empty maps to `null`. */
+export function OptionalNumberInput({
+  value,
+  onChange,
+  min,
+  max,
+  step,
+  placeholder,
+  className,
+  ...rest
+}: OptionalNumberInputProps) {
+  const displayValue = value != null && Number.isFinite(value) ? value : "";
+  return (
+    <Input
+      type="number"
+      inputMode="numeric"
+      enterKeyHint="done"
+      value={displayValue}
+      placeholder={placeholder}
+      onChange={(e) => {
+        const raw = e.target.value.trim();
+        if (raw === "") {
+          onChange(null);
+          return;
+        }
+        const n = Number(raw);
+        if (Number.isFinite(n)) onChange(n);
+      }}
+      min={min}
+      max={max}
+      step={step}
+      className={className}
+      {...rest}
+    />
+  );
+}
+
 export function NumberInput({
   value,
   onChange,

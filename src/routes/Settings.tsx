@@ -2,7 +2,14 @@ import { useMemo } from "react";
 import { Trash2, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Field, NumberInput, PercentInput } from "@/components/forms/Field";
+import { Field, NumberInput, OptionalNumberInput, PercentInput } from "@/components/forms/Field";
+import { MoneyPeriodInput } from "@/components/forms/MoneyPeriodInput";
+import { DEFAULT_MONTE_CARLO_SEED } from "@/engine/montecarlo/defaults";
+import {
+  STRESS_MONTE_CARLO_SEED_HINT,
+  STRESS_SETTINGS_DEFAULTS_INTRO,
+  STRESS_TRIALS_HINT,
+} from "@/lib/stressExplain";
 import { useProfileStore } from "@/store/useProfileStore";
 import { makePartnerProfileDefaults } from "@/engine/constants/defaults";
 import { useUiStore } from "@/store/useUiStore";
@@ -44,8 +51,12 @@ export default function Settings() {
     [analysisTaxYearLabel],
   );
   const projectionPreview = useMemo(
-    () => runProjection(profile, { taxYearPack: basePack }),
-    [profile, basePack],
+    () =>
+      runProjection(profile, {
+        taxYearPack: basePack,
+        freezeTaxYearPack: analysisTaxYearLabel != null,
+      }),
+    [profile, basePack, analysisTaxYearLabel],
   );
   const firePreview = useMemo(
     () => computeFire(profile, projectionPreview, basePack),
@@ -55,9 +66,12 @@ export default function Settings() {
   const partnerProjectionPreview = useMemo(
     () =>
       partnerProfile
-        ? runProjection(partnerProfile, { taxYearPack: basePack })
+        ? runProjection(partnerProfile, {
+            taxYearPack: basePack,
+            freezeTaxYearPack: analysisTaxYearLabel != null,
+          })
         : null,
-    [partnerProfile, basePack],
+    [partnerProfile, basePack, analysisTaxYearLabel],
   );
   const partnerFirePreview = useMemo(
     () =>
@@ -73,7 +87,7 @@ export default function Settings() {
         <CardHeader>
           <CardTitle>Tax year for analysis</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Income tax, NI, allowances, BTL marginal rates, FIRE savings rate, and insights use this frozen UK pack unless a scenario overrides it.
+            Income tax, NI, allowances, BTL rates today, FIRE savings rate, and insights use this pack. Pick a specific year to freeze rules across the whole projection; leave on calendar match to step packs (e.g. 2027/28 property rates from April 2027).
           </p>
         </CardHeader>
         <CardContent className="max-w-md">
@@ -118,20 +132,22 @@ export default function Settings() {
               </p>
               <Field
                 label="Household retirement income"
-                hint="Shared spending target for couple/family views and stress tests. Leave blank to use the sum of both targets."
+                hint="Shared spending target for couple/family views and stress tests. Leave at £0 per year to use the sum of both targets."
               >
-                <NumberInput
-                  value={householdPrefs.householdRetirementIncome ?? 0}
-                  onChange={(n) =>
+                <MoneyPeriodInput
+                  annualValue={householdPrefs.householdRetirementIncome ?? 0}
+                  onAnnualChange={(n) =>
                     updateHouseholdPrefs({
                       householdRetirementIncome: n > 0 ? n : null,
                     })
                   }
-                  min={0}
-                  step={500}
+                  minAnnual={0}
                 />
               </Field>
-              <Field label="Dependents (for Family view label)" hint="Does not change tax or projections yet.">
+              <Field
+                label="Dependents (for Family view label)"
+                hint="Synced from Spending → Children when you apply budget to plan. Edit children on Spending."
+              >
                 <NumberInput
                   value={dependentCount}
                   onChange={(n) => setDependentCount(n)}
@@ -235,22 +251,27 @@ export default function Settings() {
       <Card>
         <CardHeader>
           <CardTitle>Stress test defaults</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Used on the Stress test page. Partner households share these prefs.
-          </p>
+          <p className="text-xs text-muted-foreground">{STRESS_SETTINGS_DEFAULTS_INTRO}</p>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 max-w-lg">
-          <Field label="Monte Carlo seed" hint="Reproducible paths when set (default 42).">
-            <NumberInput
-              value={householdPrefs.monteCarloSeed ?? 0}
+          <Field
+            label="Monte Carlo seed"
+            hint={STRESS_MONTE_CARLO_SEED_HINT}
+            example={`Empty = default ${DEFAULT_MONTE_CARLO_SEED}; try 7 or 123 to compare paths`}
+          >
+            <OptionalNumberInput
+              value={householdPrefs.monteCarloSeed}
               onChange={(n) =>
-                updateHouseholdPrefs({ monteCarloSeed: n > 0 ? n : null })
+                updateHouseholdPrefs({
+                  monteCarloSeed: n != null && n > 0 ? Math.round(n) : null,
+                })
               }
-              min={0}
+              placeholder={String(DEFAULT_MONTE_CARLO_SEED)}
+              min={1}
               step={1}
             />
           </Field>
-          <Field label="Default trials">
+          <Field label="Default trials" hint={STRESS_TRIALS_HINT}>
             <NumberInput
               value={householdPrefs.monteCarloTrials ?? 1000}
               onChange={(n) => updateHouseholdPrefs({ monteCarloTrials: n })}
@@ -331,9 +352,9 @@ export default function Settings() {
             label="Essential spending (flexible)"
             hint="Optional. With discretionary below, replaces flat retirement target for need."
           >
-            <NumberInput
-              value={profile.flexibleSpending?.essentialAnnual ?? 0}
-              onChange={(n) => {
+            <MoneyPeriodInput
+              annualValue={profile.flexibleSpending?.essentialAnnual ?? 0}
+              onAnnualChange={(n) => {
                 const d = profile.flexibleSpending?.discretionaryAnnual ?? 0;
                 if (n <= 0 && d <= 0) {
                   update({ flexibleSpending: undefined });
@@ -341,14 +362,13 @@ export default function Settings() {
                 }
                 update({ flexibleSpending: { essentialAnnual: n, discretionaryAnnual: d } });
               }}
-              min={0}
-              step={500}
+              minAnnual={0}
             />
           </Field>
           <Field label="Discretionary spending (flexible)">
-            <NumberInput
-              value={profile.flexibleSpending?.discretionaryAnnual ?? 0}
-              onChange={(n) => {
+            <MoneyPeriodInput
+              annualValue={profile.flexibleSpending?.discretionaryAnnual ?? 0}
+              onAnnualChange={(n) => {
                 const e = profile.flexibleSpending?.essentialAnnual ?? 0;
                 if (n <= 0 && e <= 0) {
                   update({ flexibleSpending: undefined });
@@ -361,8 +381,7 @@ export default function Settings() {
                   },
                 });
               }}
-              min={0}
-              step={500}
+              minAnnual={0}
             />
           </Field>
           <Field label="Cash interest rate" hint="Non-ISA cash savings only.">
@@ -480,11 +499,10 @@ export default function Settings() {
             />
           </Field>
           <Field label="Barista part-time income">
-            <NumberInput
-              prefix="£"
-              suffix="/yr"
-              value={profile.baristaPartTimeIncome}
-              onChange={(n) => update({ baristaPartTimeIncome: n })}
+            <MoneyPeriodInput
+              annualValue={profile.baristaPartTimeIncome}
+              onAnnualChange={(n) => update({ baristaPartTimeIncome: n })}
+              minAnnual={0}
             />
           </Field>
         </CardContent>

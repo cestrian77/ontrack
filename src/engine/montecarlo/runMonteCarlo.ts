@@ -19,6 +19,7 @@ export interface MonteCarloConfig {
   essentialOnly?: boolean;
   householdSpendingTarget?: number;
   asOfDate?: string;
+  freezeTaxYearPack?: boolean;
 }
 
 export interface MonteCarloPathSummary {
@@ -70,8 +71,10 @@ export function runMonteCarlo(
   const startYear = asOf
     ? new Date(`${asOf}T12:00:00Z`).getUTCFullYear()
     : new Date().getUTCFullYear();
+  const freezeTaxYearPack = config.freezeTaxYearPack ?? false;
   const proj0 = runProjection(profile, {
     taxYearPack,
+    freezeTaxYearPack,
     asOfDate: asOf,
     planningHorizonAge,
   });
@@ -87,6 +90,7 @@ export function runMonteCarlo(
     );
     const projection = runProjection(profile, {
       taxYearPack,
+      freezeTaxYearPack,
       asOfDate: asOf,
       economicScenario: scenario,
       planningHorizonAge,

@@ -1,5 +1,6 @@
 import { useProfileStore } from "@/store/useProfileStore";
 import { Field, NumberInput, PercentInput } from "@/components/forms/Field";
+import { MoneyPeriodInput } from "@/components/forms/MoneyPeriodInput";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { StepShell } from "./StepShell";
@@ -95,15 +96,18 @@ export default function OnboardingPensions() {
         </Field>
         <Field
           label="State Pension forecast"
-          hint="Weekly amount from your HMRC State Pension forecast (default = full new SP)."
-          example="£221.20/wk"
+          hint="Amount from your HMRC State Pension forecast (default = full new SP)."
+          example="£221 per week"
         >
-          <NumberInput
-            prefix="£"
-            suffix="/wk"
+          <MoneyPeriodInput
+            annualValue={profile.statePensionWeekly * 52}
+            onAnnualChange={(a) =>
+              update({ statePensionWeekly: Math.round((a / 52) * 100) / 100 })
+            }
+            defaultPeriod="week"
+            roundAnnual={false}
             step={0.1}
-            value={profile.statePensionWeekly}
-            onChange={(n) => update({ statePensionWeekly: n })}
+            minAnnual={0}
           />
         </Field>
 
@@ -122,14 +126,11 @@ export default function OnboardingPensions() {
 
         {profile.hasDB && (
           <>
-            <Field
-              label="DB accrued annual income"
-              example="£8,000 p.a."
-            >
-              <NumberInput
-                prefix="£"
-                value={profile.dbAnnualIncome}
-                onChange={(n) => update({ dbAnnualIncome: n })}
+            <Field label="DB accrued income" example="£8,000 per year">
+              <MoneyPeriodInput
+                annualValue={profile.dbAnnualIncome}
+                onAnnualChange={(n) => update({ dbAnnualIncome: n })}
+                minAnnual={0}
               />
             </Field>
             <Field

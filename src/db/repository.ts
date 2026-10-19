@@ -1,4 +1,5 @@
-import type { HouseholdPrefs, Scenario, UserProfile } from "@/engine/types";
+import type { HouseholdBudget, HouseholdPrefs, Scenario, UserProfile } from "@/engine/types";
+import { normalizeHouseholdBudget } from "@/engine/household/budget/normalize";
 
 /** ~10 MB JSON export cap to avoid freezing the browser on import. */
 export const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
@@ -10,7 +11,9 @@ import { db } from "./dexie";
 function normalizeUserProfile(data: UserProfile): UserProfile {
   return {
     ...data,
-    hasLisa: data.hasLisa ?? true,
+    hasLisa:
+      data.hasLisa ??
+      (data.lisaValue > 0 || data.lisaMonthly > 0),
     hasGia: data.hasGia ?? true,
     fireCalculationPrefs: mergeFireCalculationPrefs(data.fireCalculationPrefs),
   };
@@ -34,6 +37,7 @@ function normalizeHouseholdRow(row: ProfileRowV2): ProfileRowV2 {
     partner: row.partner ? normalizeUserProfile(row.partner) : null,
     dependentCount: row.dependentCount ?? 0,
     householdPrefs: normalizeHouseholdPrefs(row.householdPrefs),
+    householdBudget: normalizeHouseholdBudget(row.householdBudget),
   };
 }
 
@@ -43,6 +47,7 @@ export const ProfileRepo = {
     partnerProfile: UserProfile | null;
     dependentCount: number;
     householdPrefs: HouseholdPrefs;
+    householdBudget: HouseholdBudget;
     onboardingComplete: boolean;
   }> {
     const row = await db.profile.get("singleton");
@@ -52,6 +57,7 @@ export const ProfileRepo = {
         partnerProfile: null,
         dependentCount: 0,
         householdPrefs: normalizeHouseholdPrefs(),
+        householdBudget: normalizeHouseholdBudget(),
         onboardingComplete: false,
       };
     }
@@ -61,6 +67,7 @@ export const ProfileRepo = {
       partnerProfile: n.partner,
       dependentCount: n.dependentCount,
       householdPrefs: n.householdPrefs ?? normalizeHouseholdPrefs(),
+      householdBudget: n.householdBudget ?? normalizeHouseholdBudget(),
       onboardingComplete: n.onboardingComplete,
     };
   },
@@ -69,6 +76,7 @@ export const ProfileRepo = {
     partnerProfile: UserProfile | null;
     dependentCount: number;
     householdPrefs?: HouseholdPrefs;
+    householdBudget?: HouseholdBudget;
     onboardingComplete: boolean;
   }): Promise<void> {
     const now = new Date().toISOString();
@@ -80,6 +88,7 @@ export const ProfileRepo = {
         : null,
       dependentCount: args.dependentCount,
       householdPrefs: normalizeHouseholdPrefs(args.householdPrefs),
+      householdBudget: normalizeHouseholdBudget(args.householdBudget),
       onboardingComplete: args.onboardingComplete,
       updatedAt: now,
     });
@@ -148,6 +157,9 @@ function normalizeImportedHousehold(raw: unknown): ProfileRowV2 | null {
       dependentCount: typeof o.dependentCount === "number" ? o.dependentCount : 0,
       householdPrefs: normalizeHouseholdPrefs(
         o.householdPrefs as HouseholdPrefs | undefined,
+      ),
+      householdBudget: normalizeHouseholdBudget(
+        o.householdBudget as HouseholdBudget | undefined,
       ),
       onboardingComplete: Boolean(o.onboardingComplete),
       updatedAt:

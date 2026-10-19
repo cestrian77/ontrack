@@ -4,7 +4,17 @@ import { Button } from "@/components/ui/button";
 import { DISCLAIMER_FULL } from "@/lib/legalCopy";
 import { DATA_PACK_DISPLAY_NAME } from "@/lib/dataPack";
 import { GLOSSARY_ENTRIES } from "@/lib/glossaryTerms";
+import { RETIREMENT_TARGET_HELP_INTRO } from "@/lib/retirementTargetExplain";
 import { latestReleaseHighlights, latestReleaseNote } from "@/lib/releaseNotes";
+import {
+  STRESS_MONTE_CARLO_SEED_HINT,
+  STRESS_PERCENTILE_HINT,
+  STRESS_SUCCESS_RATE_HINT,
+  STRESS_TERMINAL_WEALTH_HINT,
+  STRESS_TRIALS_HINT,
+  STRESS_VOLATILITY_INTRO,
+  formatVolatilityDefaults,
+} from "@/lib/stressExplain";
 
 export default function Help() {
   const latest = latestReleaseNote();
@@ -115,7 +125,10 @@ export default function Help() {
             UK rates and allowances are stored as frozen packs per tax year (e.g. 2025/26). The pack used for dashboards and the base projection follows <strong className="text-foreground">today&apos;s calendar tax year</strong> unless you pick a specific year under Settings.
           </p>
           <p>
-            Scenarios can optionally override that pack so you can compare the same life choices under different rulesets. The projection does not yet step rules year-by-year along the horizon; it uses one pack per run for tax that affects the engine (e.g. BTL marginal rates).
+            Scenarios can optionally override that pack so you can compare the same life choices under different rulesets. By default, projections step registered tax-year packs along the calendar horizon (BTL property rates, Section 24 credit, drawdown tax). Pin a specific year in Settings to freeze one pack for the whole plan.
+          </p>
+          <p>
+            From 6 April 2027 (2027/28), rental profits use separate property income rates (22% / 42% / 47% in England &amp; Wales) and a 22% finance-cost credit. We do not yet model the 2027/28 change to how personal allowances are allocated across income types. Pension drawdown enforces NMPA 57 from calendar year 2028 even if your profile still says 55.
           </p>
           <p>
             Official rates: see{" "}
@@ -132,6 +145,45 @@ export default function Help() {
         </CardContent>
       </Card>
 
+      <Card id="retirement-income-target" className="scroll-mt-[calc(var(--site-header-height)+0.75rem)]">
+        <CardHeader>
+          <CardTitle>Retirement income target and inflation</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>{RETIREMENT_TARGET_HELP_INTRO}</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>
+              <strong className="text-foreground">Lifestyle in today&apos;s money (real)</strong> — e.g.
+              &quot;I want to live like I do on £40,000 net today.&quot; Enter £40,000. The engine keeps
+              that purchasing power through retirement; your pot and FIRE numbers are already sized for
+              that goal. You do <strong className="text-foreground">not</strong> need to increase the
+              target because retirement is years away.
+            </li>
+            <li>
+              <strong className="text-foreground">A future headline figure (nominal)</strong> — e.g.
+              &quot;I want £40,000 on my payslip when I&apos;m 65.&quot; That is a smaller lifestyle in
+              today&apos;s terms if prices rise in between. OnTrack does not assume you mean this unless
+              you lower your real target to match. If you are unsure, use today&apos;s-money thinking
+              and check the nominal chart view for the headline pounds at your retirement age.
+            </li>
+          </ul>
+          <p>
+            Example: with 2.5% CPI, £40,000 in today&apos;s money is about £65,000 in nominal pounds
+            twenty years ahead — same lifestyle, bigger label. The dashed retirement target on the cash
+            flow chart follows your Real/Nominal toggle; the underlying plan always uses real terms.
+          </p>
+          <p>
+            Changing <strong className="text-foreground">CPI</strong> in Settings affects how nominal
+            charts translate amounts; it does not change your real spending target unless you edit the
+            target itself. For stress testing, try the &quot;Higher inflation&quot; scenario on the
+            Scenarios page.
+          </p>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/settings">CPI and global assumptions</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Real (today&apos;s £) vs nominal</CardTitle>
@@ -144,7 +196,11 @@ export default function Help() {
             <strong className="text-foreground">Nominal</strong> shows amounts in the pounds of each future year, including the effect of rising prices. The same real wealth appears as bigger nominal numbers over time when inflation is positive. Charts use your <strong className="text-foreground">CPI inflation</strong> assumption from Settings to convert between the two for display.
           </p>
           <p>
-            Use real for &quot;will I be better off in terms of spending power?&quot; Use nominal when you want to see headline pound totals that grow with inflation.
+            Use real for &quot;will I be better off in terms of spending power?&quot; Use nominal when you want to see headline pound totals that grow with inflation. See{" "}
+            <a className="text-primary underline underline-offset-2" href="#retirement-income-target">
+              Retirement income target and inflation
+            </a>{" "}
+            for how this applies to your target income.
           </p>
         </CardContent>
       </Card>
@@ -163,12 +219,33 @@ export default function Help() {
           </p>
           <p>
             Property appreciation and rent follow your profile assumptions; only investment returns vary by path.
-            Success means retirement spending is met each year until your planning horizon (optional essential-only mode).
+          </p>
+          <p>
+            <strong className="text-foreground">Seed &amp; trials</strong> — {STRESS_MONTE_CARLO_SEED_HINT}{" "}
+            {STRESS_TRIALS_HINT} Set defaults under Settings → Stress test defaults.
+          </p>
+          <p>
+            <strong className="text-foreground">Volatility (σ)</strong> — {STRESS_VOLATILITY_INTRO} Defaults:{" "}
+            {formatVolatilityDefaults()}. Expected returns and CPI are under Settings → Global assumptions.
+          </p>
+          <p>
+            <strong className="text-foreground">Success rate</strong> — {STRESS_SUCCESS_RATE_HINT}
+          </p>
+          <p>
+            <strong className="text-foreground">Terminal investable wealth</strong> — {STRESS_TERMINAL_WEALTH_HINT}{" "}
+            {STRESS_PERCENTILE_HINT}
+          </p>
+          <p>
+            For a higher inflation what-if without changing your base profile, use Scenarios → Change inflation
+            assumption.
           </p>
           <p>
             Source docs in the repo: <code className="text-xs">docs/MONTE_CARLO_METHODOLOGY.md</code> and{" "}
             <code className="text-xs">docs/HISTORICAL_BACKTEST_METHODOLOGY.md</code>.
           </p>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/stress">Open stress test</Link>
+          </Button>
         </CardContent>
       </Card>
 

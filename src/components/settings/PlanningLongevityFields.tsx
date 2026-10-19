@@ -3,6 +3,7 @@ import { DEFAULT_LONG_TERM_CARE } from "@/engine/care/longTermCare";
 import { DEFAULT_ESTATE_PLANNING } from "@/engine/estate/iht";
 import { DEFAULT_SPENDING_GUARDRAILS } from "@/engine/spending/guardrails";
 import { Field, NumberInput, PercentInput } from "@/components/forms/Field";
+import { MoneyPeriodInput } from "@/components/forms/MoneyPeriodInput";
 
 type Props = {
   profile: UserProfile;
@@ -27,12 +28,11 @@ export function PlanningLongevityFields({
               max={15}
             />
           </Field>
-          <Field label="Annual bonus (today&apos;s £)" hint="Grows with salary path when set.">
-            <NumberInput
-              value={profile.bonus}
-              onChange={(n) => onPatch({ bonus: n })}
-              min={0}
-              step={500}
+          <Field label="Bonus / variable pay" hint="Grows with salary path when set.">
+            <MoneyPeriodInput
+              annualValue={profile.bonus}
+              onAnnualChange={(n) => onPatch({ bonus: n })}
+              minAnnual={0}
             />
           </Field>
         </>
@@ -96,15 +96,14 @@ export function PlanningLongevityFields({
           max={100}
         />
       </Field>
-      <Field label="Care cost (real £/yr)">
-        <NumberInput
-          value={(profile.longTermCare ?? DEFAULT_LONG_TERM_CARE).annualCostReal}
-          onChange={(n) => {
+      <Field label="Care cost (real)" hint="In today&apos;s £; projected in real terms.">
+        <MoneyPeriodInput
+          annualValue={(profile.longTermCare ?? DEFAULT_LONG_TERM_CARE).annualCostReal}
+          onAnnualChange={(n) => {
             const base = profile.longTermCare ?? DEFAULT_LONG_TERM_CARE;
             onPatch({ longTermCare: { ...base, annualCostReal: n } });
           }}
-          min={0}
-          step={1000}
+          minAnnual={0}
         />
       </Field>
       <Field label="Care duration (years)">
